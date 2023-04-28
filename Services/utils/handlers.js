@@ -10,7 +10,7 @@ const exemptQueries = [
   '/users/create',
   '/users/passwordResetLink',
   '/users/newPassword',
-  '/public'
+  '/images'
 ]
 
 const isExempt = (originalUrl) => {
