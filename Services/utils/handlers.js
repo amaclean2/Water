@@ -9,12 +9,9 @@ const exemptQueries = [
   '/users/login',
   '/users/create',
   '/users/passwordResetLink',
-  '/users/newPassword'
+  '/users/newPassword',
+  '/public'
 ]
-
-const isPath = (originalUrl, query) => {
-  return originalUrl.includes(query)
-}
 
 const isExempt = (originalUrl) => {
   return exemptQueries.some((query) => originalUrl.includes(query))
@@ -22,6 +19,5 @@ const isExempt = (originalUrl) => {
 
 module.exports = {
   exemptQueries,
-  isPath,
   isExempt
 }
