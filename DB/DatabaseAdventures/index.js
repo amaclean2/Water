@@ -1,5 +1,4 @@
 const DataLayer = require('..')
-const { deleteAdventurePictures, getAdventurePictures } = require('../Pictures')
 const { AdventureObject } = require('../../TypeDefs/adventures')
 const {
   selectAdventuresInRangeStatement,
@@ -16,7 +15,9 @@ const {
   createNewSkiStatement,
   createNewSkiAdventureStatement,
   createNewClimbAdventureStatement,
-  createNewHikeAdventureStatement
+  createNewHikeAdventureStatement,
+  getAdventurePicturesStatement,
+  createAdventurePictureStatement
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
@@ -224,15 +225,11 @@ class AdventureDataLayer extends DataLayer {
     // to delete an adventure, we have to delete all of the todos associated with that adventure,
     // then all the completed advnetures, then all the pictures for that adventure,
     // then we can delete the adventure and the specific adventure details
-    return getAdventurePictures({ adventureId })
+    return this.getAdventureImages({ adventureId })
       .then((pictures) => {
         pictures.forEach((picture) => {
-          const fileName = picture.split('thumbs/').pop()
-          // deleteImageFromStorage(fileName)
-          // deleteImageFromStorage(`thumbs/${fileName}`)
+          removeImage({ url: picture })
         })
-
-        return deleteAdventurePictures({ file_names: pictures })
       })
       .then(() => {
         const databaseDeleteAdventureStatement =
@@ -246,6 +243,42 @@ class AdventureDataLayer extends DataLayer {
       })
       .then(([result]) => result)
       .catch(failedDeletion)
+  }
+
+  /**
+   *
+   * @param {Object} params
+   * @param {number} params.adventureId
+   * @returns {Promise<string[]>} | a list of urls attributed to that adventure
+   */
+  getAdventureImages({ adventureId }) {
+    return this.sendQuery(getAdventurePicturesStatement, [adventureId])
+      .then(([results]) => results)
+      .catch(failedQuery)
+  }
+
+  /**
+   *
+   * @param {Object} params
+   * @param {string} params.url
+   * @param {number} params.userId
+   * @param {number} params.adventureId
+   * @returns {Promise<string>}
+   */
+  saveImageToAdventure({ url, userId, adventureId }) {
+    return this.sendQuery(createAdventurePictureStatement, [
+      url,
+      userId,
+      adventureId
+    ])
+      .then(([results]) => {
+        if (Object.keys(results).length) {
+          return 'adventure image saved'
+        } else {
+          throw 'save adventure image failed'
+        }
+      })
+      .catch(failedInsertion)
   }
 }
 

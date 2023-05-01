@@ -1,0 +1,148 @@
+const sharp = require('sharp')
+const fs = require('fs')
+
+const createThumb = ({ file }) => {
+  return new Promise((resolve, reject) => {
+    sharp(file.path)
+      .resize({ width: 300 })
+      .toFile(
+        `${file.destination}/thumbs/${file.originalname}`,
+        (error, resizeImage) => {
+          error && reject(error)
+          resolve(resizeImage)
+        }
+      )
+  })
+}
+
+const createMain = ({ file }) => {
+  return new Promise((resolve, reject) => {
+    sharp(file.path)
+      .resize({ width: 1500, height: 1500, fit: 'contain' })
+      .withMetadata()
+      .toBuffer((error) => {
+        error ? reject(error) : resolve()
+      })
+  })
+}
+
+const createDefaultProfilePicture = async ({
+  userInitials,
+  directory,
+  userDisplayName
+}) => {
+  return new Promise((resolve, reject) => {
+    const newFileName = userDisplayName.replace(/ /g, '_') + '.png'
+
+    sharp({
+      create: {
+        text: userInitials,
+        font: 'sans',
+        align: 'center',
+        width: 200,
+        height: 200,
+        channels: 3,
+        background: {
+          r: Math.floor(Math.random() * 255),
+          g: Math.floor(Math.random() * 255),
+          b: Math.floor(Math.random() * 255)
+        }
+      }
+    }).toFile(`${directory}/profile/${newFileName}`, (error) => {
+      error && reject(error)
+      resolve(`${newFileName}`)
+    })
+  })
+}
+
+const createProfilePicture = async ({ file }) => {
+  return new Promise((resolve, reject) => {
+    const image = sharp(file.path)
+    image.metadata().then((meta) => {
+      const { width: imageWidth, height: imageHeight } = meta
+      let top, left, width, height
+
+      // crop square to the center of the image
+      if (imageWidth > imageHeight) {
+        top = 0
+        left = imageWidth / 2 - imageHeight / 2
+        height = imageHeight
+        width = imageHeight
+      } else if (imageHeight > imageWidth) {
+        top = imageHeight / 2 - imageWidth / 2
+        left = 0
+        width = imageWidth
+        height = imageWidth
+      } else {
+        top = 0
+        width = 0
+        height = imageWidth
+        width = imageWidth
+      }
+
+      return image
+        .extract({
+          left: Math.round(left),
+          top: Math.round(top),
+          width: Math.round(width),
+          height: Math.round(height)
+        })
+        .resize({ width: 500 })
+        .toFile(
+          `${file.destination}/profile/${file.originalname}`,
+          (error, resizeImage) => {
+            error && reject(error)
+            resolve(resizeImage)
+          }
+        )
+    })
+  })
+}
+
+const removeImage = async ({ url }) => {
+  let finalPath
+
+  if (url.includes('/profile')) {
+    // remove a profile picture
+    finalPath = url.split('/profile')[1]
+    return new Promise((resolve, reject) => {
+      fs.unlink(`${process.env.FILE_STORAGE_PATH}${finalPath}`, (error) => {
+        error && reject(error)
+        resolve('image removed successfully')
+      })
+    })
+  } else {
+    // remove a regular image
+    finalPath = url.split('images/thumbs/')[1]
+    const mainRemoval = new Promise((resolve, reject) => {
+      fs.unlink(`${process.env.FILE_STORAGE_PATH}${finalPath}`, (error) => {
+        error && reject(error)
+
+        resolve('image removed successfully')
+      })
+    })
+
+    const thumbRemoval = new Promise((resolve, reject) => {
+      fs.unlink(
+        `${process.env.FILE_STORAGE_PATH}thumbs/${finalPath}`,
+        (error) => {
+          error && reject(error)
+
+          resolve('thumb removed successfully')
+        }
+      )
+    })
+
+    return Promise.all([mainRemoval, thumbRemoval]).then((responses) => {
+      return responses
+    })
+  }
+}
+
+module.exports = {
+  createThumb,
+  createMain,
+  createProfilePicture,
+  createDefaultProfilePicture,
+  removeImage
+}

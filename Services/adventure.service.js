@@ -58,8 +58,9 @@ class AdventureService extends Water {
     const completedUsers = await this.completedDB.getCompletedUsers({
       adventureId: id
     })
-    // const images = await getAdventurePictures({ adventureId: id })
-    const images = []
+    const images = await this.adventureDB.getAdventureImages({
+      adventureId: id
+    })
 
     const formattedAdventure = {
       ...adventure,

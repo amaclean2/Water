@@ -6,14 +6,14 @@
  */
 
 const createUserStatement =
-  'INSERT INTO users (email, first_name, last_name, password) VALUES(?, ?, ?, ?)'
+  'INSERT INTO users (email, first_name, last_name, password, profile_picture_url) VALUES(?, ?, ?, ?, ?)'
 const insertSearchableStatement =
   'REPLACE INTO searchable_users (searchable_text, user_id) VALUES (?, ?)'
 const selectUserIdStatement = 'SELECT id FROM users WHERE email = ?'
 const getUserWithEmailStatement =
-  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site FROM users WHERE email = ?'
+  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url FROM users WHERE email = ?'
 const getUserByIdStatement =
-  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site FROM users WHERE id = ?'
+  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url FROM users WHERE id = ?'
 const updateUserStatements = {
   first_name:
     'UPDATE users SET first_name = ?, last_updated = NOW() WHERE id = ?',
