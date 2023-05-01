@@ -1,16 +1,14 @@
 const createUserPictureStatement =
-  'INSERT INTO user_images (file_name, creator_id, public) VALUES (?, ?, 0)'
+  'INSERT INTO images (url, creator_id, public) VALUES (?, ?, 1)'
 const createAdventurePictureStatement =
-  'INSERT INTO user_images (file_name, creator_id, adventure_id, public) VALUES (?, ?, ?, 0)'
+  'INSERT INTO images (url, creator_id, adventure_id, public) VALUES (?, ?, ?, 1)'
 const getAdventurePicturesStatement =
-  'SELECT file_name FROM user_images WHERE adventure_id = ?'
-const getUserPicturesStatement =
-  'SELECT file_name FROM user_images WHERE creator_id = ?'
-const deletePictureStatement = 'DELETE FROM user_images WHERE file_name = ?'
+  'SELECT url FROM images WHERE adventure_id = ?'
+const getUserPicturesStatement = 'SELECT url FROM images WHERE creator_id = ?'
+const deletePictureStatement = 'DELETE FROM images WHERE url = ?'
 const deleteProfilePictureStatement =
   'UPDATE users SET profile_picture_url = "", last_updated = NOW() WHERE id = ?'
-const deletePictureByAdventureStatement =
-  'DELETE FROM user_images WHERE file_name = ?'
+const deletePictureByAdventureStatement = 'DELETE FROM images WHERE url = ?'
 
 module.exports = {
   createUserPictureStatement,

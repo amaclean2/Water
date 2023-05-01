@@ -3,6 +3,8 @@ const logger = require('../Config/logger')
 
 let creator, newAdventure, serviceHandler
 
+jest.mock('../Services/utils/sharp')
+
 describe('adventure service layer testing', () => {
   beforeAll(async () => {
     serviceHandler = new SundayService(

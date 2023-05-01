@@ -3,6 +3,13 @@ const { handleEmailUserFollowed } = require('./utils/email')
 const SearchService = require('./search.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
 const logger = require('../Config/logger')
+const {
+  createThumb,
+  createMain,
+  createProfilePicture,
+  createDefaultProfilePicture,
+  removeImage
+} = require('./utils/sharp')
 
 class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
@@ -63,8 +70,7 @@ class UserService extends Water {
       userId: derivedId
     })
     const friends = await this.userDB.getFriendsData({ userId: derivedId })
-    // const images = (await getUserPictures({ userId: derivedId })) || []
-    const images = []
+    const images = await this.userDB.getUserImages({ userId: derivedId })
 
     const returnObj = {
       ...userObject,
@@ -80,6 +86,8 @@ class UserService extends Water {
       }))
     }
 
+    console.log({ returnObj })
+
     return returnObj
   }
 
@@ -92,7 +100,14 @@ class UserService extends Water {
    * @param {string} params.lastName | user last_name
    * @returns {Promise<NewUserResponse>} an object containing a new user and a token
    */
-  addNewUser({ email, password, confirmPassword, firstName, lastName }) {
+  addNewUser({
+    email,
+    password,
+    confirmPassword,
+    firstName,
+    lastName,
+    baseImageUrl
+  }) {
     if (password !== confirmPassword) {
       throw 'passwords do not match'
     }
@@ -111,14 +126,22 @@ class UserService extends Water {
         }
       })
       .then(() =>
+        createDefaultProfilePicture({
+          userInitials: `${firstName[0]}${lastName[0]}`,
+          directory: process.env.FILE_STORAGE_PATH,
+          userDisplayName: `${firstName} ${lastName}`
+        })
+      )
+      .then((newProfilePicture) =>
         this.userDB.addUserToDatabase({
           email,
           firstName,
           lastName,
-          password: hashedPassword
+          password: hashedPassword,
+          profilePicture: `${baseImageUrl}profile/${newProfilePicture}`
         })
       )
-      .then((newUserId) =>
+      .then(({ userId, profilePicture }) =>
         this.#buildUserObject({
           initiation: {
             providedObject: {
@@ -126,7 +149,8 @@ class UserService extends Water {
               password,
               first_name: firstName,
               last_name: lastName,
-              id: newUserId
+              id: userId,
+              profile_picture_url: profilePicture
             }
           }
         })
@@ -287,6 +311,66 @@ class UserService extends Water {
    */
   addAdventureTodo({ userId, adventureId, isPublic }) {
     return this.todoDB.createNewTodoAdventure({ userId, adventureId, isPublic })
+  }
+
+  /**
+   *
+   * @param {Object} params
+   * @param {string} params.url
+   * @param {number} params.userId
+   * @param {number} params.adventureId
+   */
+  async saveImage({ file, url, userId, adventureId, profilePicture }) {
+    if (!userId || !url) {
+      throw 'userId and url parameters are required'
+    }
+
+    if (profilePicture && adventureId) {
+      throw 'this picture can only be saved either to an adventure or as a profile picture'
+    }
+
+    if (profilePicture !== undefined) {
+      await createProfilePicture({ file })
+      return this.userDB.updateDatabaseUser({
+        fieldName: 'profile_picture_url',
+        fieldValue: url,
+        userId
+      })
+    }
+
+    await createThumb({ file })
+    await createMain({ file })
+
+    return adventureId !== undefined
+      ? this.adventureDB.saveImageToAdventure({ url, userId, adventureId })
+      : this.userDB.saveImageToUser({ url, userId })
+  }
+
+  removeGalleryImage({ url }) {
+    return removeImage({ url }).then(() =>
+      this.userDB.removeImageEntry({ url })
+    )
+  }
+
+  removeProfileImage({ userId, url }) {
+    return removeImage({ url }).then(() =>
+      this.userDB.editUser({
+        userId,
+        fieldName: 'profile_picture_url',
+        fieldValue: ''
+      })
+    )
+  }
+  changeProfileImage({ userId, file, url, oldUrl }) {
+    return removeImage({ oldUrl })
+      .then(() => createProfilePicture({ file }))
+      .then(() =>
+        this.userDB.editUser({
+          userId,
+          fieldName: 'profile_picture_url',
+          fieldValue: url
+        })
+      )
   }
 }
 

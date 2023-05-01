@@ -2,6 +2,8 @@ const SundayService = require('..')
 
 let serviceHandler, token, userId, secondUserId, newAdventure
 
+jest.mock('../Services/utils/sharp')
+
 describe('user service layer testing', () => {
   beforeAll(async () => {
     serviceHandler = new SundayService(

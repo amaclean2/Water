@@ -15,7 +15,10 @@ const {
   insertSearchableStatement,
   getSearchFields,
   getPasswordHashStatement,
-  getIsFriendStatement
+  getIsFriendStatement,
+  createUserPictureStatement,
+  getUserPicturesStatement,
+  deletePictureStatement
 } = require('../Statements')
 const {
   failedInsertion,
@@ -34,14 +37,18 @@ class UserDataLayer extends DataLayer {
    * @param {string} params.password
    * @returns {Promise} the id of the new user
    */
-  addUserToDatabase({ email, firstName, lastName, password }) {
+  addUserToDatabase({ email, firstName, lastName, password, profilePicture }) {
     return this.sendQuery(createUserStatement, [
       email,
       firstName,
       lastName,
-      password
+      password,
+      profilePicture
     ])
-      .then(([{ insertId }]) => insertId)
+      .then(([{ insertId }]) => ({
+        userId: insertId,
+        profilePicture
+      }))
       .catch(failedInsertion)
   }
 
@@ -179,6 +186,45 @@ class UserDataLayer extends DataLayer {
     return this.sendQuery(findNewFriendStatement, [`%${keyword}%`])
       .then(([results]) => results)
       .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.url
+   * @param {number} params.userId
+   * @returns {Promise<string>}
+   */
+  saveImageToUser({ url, userId }) {
+    return this.sendQuery(createUserPictureStatement, [url, userId])
+      .then(() => {
+        return 'user image saved'
+      })
+      .catch(failedInsertion)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<string[]>} | a list of urls attributed to that user
+   */
+  getUserImages({ userId }) {
+    return this.sendQuery(getUserPicturesStatement, [userId])
+      .then(([results]) =>
+        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
+      )
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.url
+   * @returns {Promise<void>}
+   */
+  removeImageEntry({ url }) {
+    const formattedUrl = url.replace('/thumbs', '')
+    return this.sendQuery(deletePictureStatement, [formattedUrl]).catch(
+      failedDeletion
+    )
   }
 
   /**
