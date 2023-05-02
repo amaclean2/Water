@@ -34,6 +34,7 @@ const {
   failedUpdate,
   failedDeletion
 } = require('../utils')
+const { removeImage } = require('../../Services/utils/sharp')
 
 // if everything is working right, the only time a cache is out of date is
 // when a new adventure gets added or updated and then we update the cache
@@ -253,7 +254,9 @@ class AdventureDataLayer extends DataLayer {
    */
   getAdventureImages({ adventureId }) {
     return this.sendQuery(getAdventurePicturesStatement, [adventureId])
-      .then(([results]) => results)
+      .then(([results]) =>
+        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
+      )
       .catch(failedQuery)
   }
 
