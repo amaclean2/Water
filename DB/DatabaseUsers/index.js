@@ -37,7 +37,13 @@ class UserDataLayer extends DataLayer {
    * @param {string} params.password
    * @returns {Promise} the id of the new user
    */
-  addUserToDatabase({ email, firstName, lastName, password, profilePicture }) {
+  addUserToDatabase({
+    email,
+    firstName,
+    lastName,
+    password,
+    profilePicture = ''
+  }) {
     return this.sendQuery(createUserStatement, [
       email,
       firstName,
@@ -46,8 +52,7 @@ class UserDataLayer extends DataLayer {
       profilePicture
     ])
       .then(([{ insertId }]) => ({
-        userId: insertId,
-        profilePicture
+        userId: insertId
       }))
       .catch(failedInsertion)
   }

@@ -6,7 +6,7 @@ const createThumb = ({ file }) => {
     sharp(file.path)
       .resize({ width: 300 })
       .toFile(
-        `${file.destination}/thumbs/${file.originalname}`,
+        `${file.destination}/thumbs/${file.originalname.replace(/ /g, '')}`,
         (error, resizeImage) => {
           error && reject(error)
           resolve(resizeImage)
@@ -26,17 +26,13 @@ const createMain = ({ file }) => {
   })
 }
 
-const createDefaultProfilePicture = async ({
-  userInitials,
-  directory,
-  userDisplayName
-}) => {
+const createDefaultProfilePicture = async ({ directory, userId }) => {
   return new Promise((resolve, reject) => {
-    const newFileName = userDisplayName.replace(/ /g, '_') + '.png'
+    const newFileName = userId + '.png'
 
     sharp({
       create: {
-        text: userInitials,
+        // text: userInitials,
         font: 'sans',
         align: 'center',
         width: 200,
@@ -50,7 +46,7 @@ const createDefaultProfilePicture = async ({
       }
     }).toFile(`${directory}/profile/${newFileName}`, (error) => {
       error && reject(error)
-      resolve(`${newFileName}`)
+      resolve({ fileName: newFileName, userId })
     })
   })
 }
@@ -89,10 +85,21 @@ const createProfilePicture = async ({ file }) => {
         })
         .resize({ width: 500 })
         .toFile(
-          `${file.destination}/profile/${file.originalname}`,
+          `${file.destination}/profile/${file.originalname.replace(/ /g, '')}`,
           (error, resizeImage) => {
             error && reject(error)
-            resolve(resizeImage)
+
+            fs.unlink(
+              `${process.env.FILE_STORAGE_PATH}/${file.originalname.replace(
+                / /g,
+                ''
+              )}`,
+              (removeError) => {
+                removeError && reject(removeError)
+
+                resolve(resizeImage)
+              }
+            )
           }
         )
     })
@@ -106,16 +113,19 @@ const removeImage = async ({ url }) => {
     // remove a profile picture
     finalPath = url.split('/profile')[1]
     return new Promise((resolve, reject) => {
-      fs.unlink(`${process.env.FILE_STORAGE_PATH}${finalPath}`, (error) => {
-        error && reject(error)
-        resolve('image removed successfully')
-      })
+      fs.unlink(
+        `${process.env.FILE_STORAGE_PATH}/profile${finalPath}`,
+        (error) => {
+          error && reject(error)
+          resolve('image removed successfully')
+        }
+      )
     })
   } else {
     // remove a regular image
     finalPath = url.split('images/thumbs/')[1]
     const mainRemoval = new Promise((resolve, reject) => {
-      fs.unlink(`${process.env.FILE_STORAGE_PATH}${finalPath}`, (error) => {
+      fs.unlink(`${process.env.FILE_STORAGE_PATH}/${finalPath}`, (error) => {
         error && reject(error)
 
         resolve('image removed successfully')
@@ -124,7 +134,7 @@ const removeImage = async ({ url }) => {
 
     const thumbRemoval = new Promise((resolve, reject) => {
       fs.unlink(
-        `${process.env.FILE_STORAGE_PATH}thumbs/${finalPath}`,
+        `${process.env.FILE_STORAGE_PATH}/thumbs/${finalPath}`,
         (error) => {
           error && reject(error)
 

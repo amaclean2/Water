@@ -2,7 +2,6 @@ const Water = require('.')
 const { handleEmailUserFollowed } = require('./utils/email')
 const SearchService = require('./search.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
-const logger = require('../Config/logger')
 const {
   createThumb,
   createMain,
@@ -86,8 +85,6 @@ class UserService extends Water {
       }))
     }
 
-    console.log({ returnObj })
-
     return returnObj
   }
 
@@ -100,7 +97,7 @@ class UserService extends Water {
    * @param {string} params.lastName | user last_name
    * @returns {Promise<NewUserResponse>} an object containing a new user and a token
    */
-  addNewUser({
+  async addNewUser({
     email,
     password,
     confirmPassword,
@@ -116,52 +113,52 @@ class UserService extends Water {
     }
 
     const hashedPassword = hashPassword(password)
-    return this.userDB
-      .checkIfUserExistsByEmail({ email })
-      .then((userExists) => {
-        if (!userExists) {
-          return true
-        } else {
-          throw 'An account with this email aready exists. Please try a different email or login with that account.'
-        }
-      })
-      .then(() =>
-        createDefaultProfilePicture({
-          userInitials: `${firstName[0]}${lastName[0]}`,
-          directory: process.env.FILE_STORAGE_PATH,
-          userDisplayName: `${firstName} ${lastName}`
-        })
-      )
-      .then((newProfilePicture) =>
-        this.userDB.addUserToDatabase({
+
+    const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
+
+    if (userExists) {
+      throw 'An account with this email aready exists. Please try a different email or login with that account.'
+    }
+
+    const { userId } = await this.userDB.addUserToDatabase({
+      email,
+      firstName,
+      lastName,
+      password: hashedPassword
+    })
+
+    const { fileName } = await createDefaultProfilePicture({
+      directory: process.env.FILE_STORAGE_PATH,
+      userId
+    })
+
+    const profileImageUrl = `${baseImageUrl}profile/${fileName}`
+
+    await this.userDB.updateDatabaseUser({
+      userId,
+      fieldName: 'profile_picture_url',
+      fieldValue: profileImageUrl
+    })
+
+    const user = await this.#buildUserObject({
+      initiation: {
+        providedObject: {
           email,
-          firstName,
-          lastName,
-          password: hashedPassword,
-          profilePicture: `${baseImageUrl}profile/${newProfilePicture}`
-        })
-      )
-      .then(({ userId, profilePicture }) =>
-        this.#buildUserObject({
-          initiation: {
-            providedObject: {
-              email,
-              password,
-              first_name: firstName,
-              last_name: lastName,
-              id: userId,
-              profile_picture_url: profilePicture
-            }
-          }
-        })
-      )
-      .then((user) => {
-        this.search.saveUserKeywords({
-          searchableFields: user,
-          userId: user.id
-        })
-        return { user, token: this.auth.issue({ id: user.id }) }
-      })
+          password,
+          first_name: firstName,
+          last_name: lastName,
+          id: userId,
+          profile_picture_url: profileImageUrl
+        }
+      }
+    })
+
+    this.search.saveUserKeywords({
+      searchableFields: user,
+      userId
+    })
+
+    return { user, token: this.auth.issue({ id: userId }) }
   }
 
   /**
@@ -346,26 +343,56 @@ class UserService extends Water {
       : this.userDB.saveImageToUser({ url, userId })
   }
 
+  /**
+   *
+   * @param {Object} params
+   * @param {string} params.url
+   * @returns {Promise<void>}
+   */
   removeGalleryImage({ url }) {
     return removeImage({ url }).then(() =>
       this.userDB.removeImageEntry({ url })
     )
   }
 
-  removeProfileImage({ userId, url }) {
-    return removeImage({ url }).then(() =>
-      this.userDB.editUser({
-        userId,
-        fieldName: 'profile_picture_url',
-        fieldValue: ''
-      })
-    )
+  /**
+   *
+   * @param {Object} params
+   * @param {string} params.oldUrl
+   * @param {number} params.userId
+   * @returns {Promise<void>}
+   */
+  removeProfileImage({ userId, oldUrl }) {
+    return removeImage({ url: oldUrl })
+      .then(() =>
+        createDefaultProfilePicture({
+          directory: process.env.FILE_STORAGE_PATH,
+          userId
+        })
+      )
+      .then(({ fileName }) =>
+        this.userDB.updateDatabaseUser({
+          userId,
+          fieldName: 'profile_picture_url',
+          fieldValue: `${oldUrl.split('/profile').shift()}/profile/${fileName}`
+        })
+      )
   }
+
+  /**
+   *
+   * @param {Object} params
+   * @param {string} params.url
+   * @param {number} params.userId
+   * @param {string} params.oldUrl
+   * @param {File} params.file
+   * @returns {Promise<void>}
+   */
   changeProfileImage({ userId, file, url, oldUrl }) {
-    return removeImage({ oldUrl })
+    return removeImage({ url: oldUrl })
       .then(() => createProfilePicture({ file }))
       .then(() =>
-        this.userDB.editUser({
+        this.userDB.updateDatabaseUser({
           userId,
           fieldName: 'profile_picture_url',
           fieldValue: url
