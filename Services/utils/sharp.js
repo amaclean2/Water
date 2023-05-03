@@ -6,7 +6,7 @@ const createThumb = ({ file }) => {
     sharp(file.path)
       .resize({ width: 300 })
       .toFile(
-        `${file.destination}/thumbs/${file.originalname}`,
+        `${file.destination}/thumbs/${file.originalname.replace(/ /g, '')}`,
         (error, resizeImage) => {
           error && reject(error)
           resolve(resizeImage)
@@ -85,12 +85,15 @@ const createProfilePicture = async ({ file }) => {
         })
         .resize({ width: 500 })
         .toFile(
-          `${file.destination}/profile/${file.originalname}`,
+          `${file.destination}/profile/${file.originalname.replace(/ /g, '')}`,
           (error, resizeImage) => {
             error && reject(error)
 
             fs.unlink(
-              `${process.env.FILE_STORAGE_PATH}/${file.originalname}`,
+              `${process.env.FILE_STORAGE_PATH}/${file.originalname.replace(
+                / /g,
+                ''
+              )}`,
               (removeError) => {
                 removeError && reject(removeError)
 
