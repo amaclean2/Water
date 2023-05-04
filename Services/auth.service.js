@@ -12,18 +12,18 @@ class AuthService {
   }
 
   validate({ originalUrl, token }) {
-    return new Promise((res, rej) => {
+    return new Promise((resolve, reject) => {
       if (originalUrl && isExempt(originalUrl)) {
-        res(true)
+        resolve(true)
       }
 
       if (token === undefined || token === 'undefined') {
-        rej('there was no autorization token provided')
+        reject(`there was no autorization token provided for ${originalUrl}`)
       } else {
         jwt.verify(token, this.jwtSecret, {}, (error, decoded) => {
-          error && rej(error)
+          error && reject(error)
 
-          res({ idFromToken: decoded.id })
+          resolve({ idFromToken: decoded.id })
         })
       }
     })

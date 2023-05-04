@@ -19,8 +19,9 @@ const clearUnreadStatement =
 const getConversationMessagesStatement = `
 SELECT
 CONCAT(u.first_name, ' ', u.last_name) AS display_name,
-message_body,
-data_reference,
+m.message_body,
+m.data_reference,
+m.date_created,
 u.id AS user_id
 FROM messages AS m
 INNER JOIN users AS u ON m.sender_id = u.id
