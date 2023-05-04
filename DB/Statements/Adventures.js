@@ -54,7 +54,7 @@ const updateAdventureStatements = {
   ski_difficulty:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.difficulty = ? WHERE a.id = ?',
   hike_difficulty:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_climb_id = h.id SET h.difficulty = ? WHERE a.id = ?',
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.difficulty = ? WHERE a.id = ?',
   duration:
     'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.duration = ? WHERE a.id = ?',
   ski_summit_elevation:
