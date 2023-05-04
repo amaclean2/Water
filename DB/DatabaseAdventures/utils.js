@@ -114,7 +114,7 @@ const getStatementKey = (name, type) => {
   switch (name) {
     case 'difficulty':
       if (type === 'ski') return 'ski_difficulty'
-      else return 'hikedifficulty'
+      else return 'hike_difficulty'
     case 'summit_elevation':
       if (type === 'ski') return 'ski_summit_elevation'
       else return 'hike_summit_elevation'
