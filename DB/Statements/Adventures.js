@@ -68,7 +68,7 @@ const updateAdventureStatements = {
   ski_base_elevation:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.base_elevation = ? WHERE a.id = ?',
   hike_base_elevation:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_climb_id = h.id SET h.base_elevation = ? WHERE a.id = ?',
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.base_elevation = ? WHERE a.id = ?',
   gear: 'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.gear = ? WHERE a.id = ?',
   grade:
     'UPDATE climb AS c INNER JOIN adventures AS a ON a.adventure_climb_id = c.id SET c.grade = ? WHERE a.id = ?',
@@ -86,7 +86,7 @@ const updateAdventureStatements = {
   climb_season:
     'UPDATE climb AS c INNER JOIN adventures AS a ON a.adventure_climb_id = c.id SET c.season = ? WHERE a.id = ?',
   hike_season:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_climb_id = h.id SET h.season = ? WHERE a.id = ?'
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.season = ? WHERE a.id = ?'
 }
 
 const deleteSkiStatement =

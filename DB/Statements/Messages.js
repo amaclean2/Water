@@ -16,8 +16,17 @@ const setLastMessageStatement =
   'UPDATE conversations SET last_message = ? WHERE id = ?'
 const clearUnreadStatement =
   'UPDATE conversation_interactions SET unread = 0 WHERE user_id = ? AND conversation_id = ?'
-const getConversationMessagesStatement =
-  "SELECT CONCAT(u.first_name, ' ', u.last_name) AS display_name, message_body, data_reference, u.id AS user_id FROM messages AS m INNER JOIN users AS u ON m.sender_id = u.id WHERE m.conversation_id = ?"
+const getConversationMessagesStatement = `
+SELECT
+CONCAT(u.first_name, ' ', u.last_name) AS display_name,
+message_body,
+data_reference,
+u.id AS user_id
+FROM messages AS m
+INNER JOIN users AS u ON m.sender_id = u.id
+WHERE m.conversation_id = ?
+ORDER BY date_created DESC
+`
 
 module.exports = {
   createNewMessageStatement,
