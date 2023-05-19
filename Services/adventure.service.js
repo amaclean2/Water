@@ -2,7 +2,7 @@ const Water = require('.')
 const SearchService = require('./search.service')
 const { Cache } = require('memory-cache')
 const { updateAdventureCache } = require('./utils/caching')
-const logger = require('../Config/logger')
+const csv = require('csvtojson')
 
 const CACHE_TIMEOUT = 1000 * 360
 
@@ -254,54 +254,19 @@ class AdventureService extends Water {
   processCSVToAdventure({ csvString }) {
     if (!csvString.length) throw 'There was no data to process'
 
-    const data = csvString.split('\r\n')
-    if (data.length < 2) throw 'The data was formatted incorrectly'
-
-    const [keys, ...values] = data
-    const strippedKeys = keys.replace(/["|\r]/g, '').split(',')
-
-    const newData = values.map((value) => {
-      value = value.replace(/(".*?")|,/g, (...m) => m[1] || '|')
-      const strippedValue = value.split('|')
-
-      const assembledObject = strippedValue.reduce(
-        (object, value, idx) => ({ ...object, [strippedKeys[idx]]: value }),
-        {}
-      )
-      if (assembledObject.id) {
-        assembledObject.id = Number(assembledObject.id.replace('"', ''))
-      }
-
-      assembledObject['coordinates_lat'] = Number(
-        assembledObject['coordinates.lat'].replace('"', '')
-      )
-      assembledObject['coordinates_lng'] = Number(
-        assembledObject['coordinates.lng'].replace('"', '')
-      )
-      assembledObject.public = [true, 'true', 'TRUE'].includes(
-        assembledObject.public
-      )
-        ? 1
-        : 0
-      assembledObject.creator_id = Number(assembledObject.creator_id)
-
-      if (
-        assembledObject.adventure_type === 'ski' &&
-        assembledObject.gear &&
-        assembledObject.season
-      ) {
-        assembledObject.gear = assembledObject.gear.replaceAll('"', '')
-        assembledObject.season = assembledObject.season.replaceAll('"', '')
-      }
-
-      assembledObject.nearest_city = assembledObject.nearest_city.replaceAll(
-        '"',
-        ''
-      )
-      return assembledObject
-    })
-
-    return newData
+    csv()
+      .fromString(csvString)
+      .then((jsonObject) => {
+        return jsonObject.map((adventure) => ({
+          ...adventure,
+          public: ['true', 'TRUE', true].includes(adventure.public),
+          coordinates: {
+            lat: Number(adventure.coordinates.lat),
+            lng: Number(adventure.coordinates.lng)
+          },
+          rating: Number(adventure.rating)
+        }))
+      })
   }
 }
 

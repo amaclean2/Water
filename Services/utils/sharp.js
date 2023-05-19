@@ -109,9 +109,13 @@ const createProfilePicture = async ({ file }) => {
 const removeImage = async ({ url }) => {
   let finalPath
 
-  if (url.includes('/profile')) {
+  if (!url || url === 'null') {
+    return 'url must be present for image to be removed'
+  }
+
+  if (url?.includes('/profile')) {
     // remove a profile picture
-    finalPath = url.split('/profile')[1]
+    finalPath = url?.split('/profile')[1]
     return new Promise((resolve, reject) => {
       fs.unlink(
         `${process.env.FILE_STORAGE_PATH}/profile${finalPath}`,
@@ -123,8 +127,8 @@ const removeImage = async ({ url }) => {
     })
   } else {
     // remove a regular image
-    finalPath = url.split('images/')[1]
-    finalPath = finalPath.replace('thumbs/', '')
+    finalPath = url?.split('images/')[1]
+    finalPath = finalPath?.replace('thumbs/', '')
     const mainRemoval = new Promise((resolve, reject) => {
       fs.unlink(`${process.env.FILE_STORAGE_PATH}/${finalPath}`, (error) => {
         error && reject(error)
