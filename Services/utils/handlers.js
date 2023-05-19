@@ -1,5 +1,6 @@
 const exemptQueries = [
   '/initial',
+  'favicon',
   '/adventures/all',
   '/adventures/search',
   '/adventures/details',

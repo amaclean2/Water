@@ -1,6 +1,6 @@
 {
   "name": "@amaclean2/sundaypeak-water",
-  "version": "0.0.13",
+  "version": "1.0.0",
   "description": "Backend services for SundayPeak",
   "main": "index.js",
   "scripts": {
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "byf-custom-logger": "^2.0.4",
+    "csvtojson": "^2.0.10",
     "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.0",
     "memory-cache": "^0.2.0",
