@@ -257,6 +257,19 @@ class AdventureService extends Water {
     csv()
       .fromString(csvString)
       .then((jsonObject) => {
+        jsonObject.forEach((adventure) => {
+          if (!adventure.adventure_type)
+            throw 'adventure_type is required in the csv file'
+          if (!adventure.adventure_name)
+            throw 'adventure_name is required in the csv file'
+          if (!adventure.coordinates)
+            throw 'coordinates are required in the csv file formatted as { lat: number, lng: number }'
+          if (!adventure.nearest_city)
+            throw 'nearest_city is required in the csv file'
+          if (adventure.public === undefined)
+            throw 'public is required in the csv file'
+        })
+
         return jsonObject.map((adventure) => ({
           ...adventure,
           public: ['true', 'TRUE', true].includes(adventure.public),
