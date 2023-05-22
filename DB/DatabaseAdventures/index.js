@@ -91,7 +91,7 @@ class AdventureDataLayer extends DataLayer {
     return Promise.all(
       ['ski', 'climb', 'hike'].map((type) => {
         if (!parsedAdventures[type].length) {
-          return true
+          return []
         }
 
         return this.sendQuery(createNewSpecificStatements[type], [

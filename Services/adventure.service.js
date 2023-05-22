@@ -254,7 +254,7 @@ class AdventureService extends Water {
   processCSVToAdventure({ csvString }) {
     if (!csvString.length) throw 'There was no data to process'
 
-    csv()
+    return csv()
       .fromString(csvString)
       .then((jsonObject) => {
         jsonObject.forEach((adventure) => {
