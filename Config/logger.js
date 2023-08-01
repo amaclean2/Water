@@ -11,8 +11,8 @@ if (process.env.NODE_ENV === 'production') {
   logger.add(
     new winston.transports.MongoDB({
       level: 'info',
-      db: 'mongodb://logs_db:27017',
-      dbName: 'sundaypeak_logger',
+      db: `mongodb+srv://byf:${process.env.MONGO_PASS}@splogging.lpeaxvy.mongodb.net/?retryWrites=true&w=majority`,
+      dbName: 'spLogging',
       collection: 'water_logs',
       tryReconnect: true,
       options: {

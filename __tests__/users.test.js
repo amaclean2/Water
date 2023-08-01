@@ -54,13 +54,12 @@ describe('user service layer testing', () => {
       expect(response.user.images).toBeDefined()
       expect(response.token).toBeDefined()
 
-      token = response.token
+      userId = response.user.id
     })
 
     test('can return to that user', async () => {
       const response = await serviceHandler.userService.getPresignedInUser({
-        url: '/requiredUrl',
-        token
+        userId
       })
 
       expect(response).toBeDefined()
