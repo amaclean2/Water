@@ -187,16 +187,12 @@ class UserService extends Water {
    * @param {string} params.token
    * @returns {Promise<UserObject>}
    */
-  getPresignedInUser({ url, token }) {
-    return this.auth
-      .validate({ originalUrl: url, token })
-      .then(({ idFromToken: userId }) => {
-        if (!userId) {
-          throw 'user is not logged in'
-        }
+  getPresignedInUser({ userId }) {
+    if (!userId) {
+      throw 'user is not logged in'
+    }
 
-        return this.#buildUserObject({ initiation: { id: userId } })
-      })
+    return this.#buildUserObject({ initiation: { id: userId } })
   }
 
   /**
