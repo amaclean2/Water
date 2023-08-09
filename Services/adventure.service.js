@@ -49,7 +49,7 @@ class AdventureService extends Water {
     })
 
     if (!adventure) {
-      throw "adventure couldn't be found"
+      throw "the adventure couldn't be found"
     }
 
     const todoUsers = await this.todoDB.getAdventureTodoList({
@@ -89,7 +89,7 @@ class AdventureService extends Water {
   /**
    *
    * @param {Object} params
-   * @param {AdventureObject} params.AdventureObject
+   * @param {AdventureObject} params.adventureObject | an object containing something...
    * @returns {Promise<CreateAdventureResponse>} | an object containing the adventure and the geojson list
    */
   async createAdventure({ adventureObject }) {
@@ -217,9 +217,11 @@ class AdventureService extends Water {
         // we need to rebuild the cached adventure list. Since we can do this with data we already have,
         // it doesn't require another round trip to the database
 
-        this.adventureCache.del(adventureKeywords.adventure_type)
-
-        if (this.search.adventureKeywordLibrary.includes(field.name)) {
+        if (
+          adventureKeywords !== false &&
+          this.search.adventureKeywordLibrary.includes(field.name)
+        ) {
+          this.adventureCache.del(adventureKeywords.adventure_type)
           this.search.saveAdventureKeywords({
             searchableFields: adventureKeywords,
             id: field.adventure_id

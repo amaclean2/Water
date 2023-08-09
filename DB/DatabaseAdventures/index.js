@@ -1,7 +1,7 @@
 const DataLayer = require('..')
 const { AdventureObject } = require('../../TypeDefs/adventures')
 const {
-  selectAdventuresInRangeStatement,
+  selectAdventuresStatement,
   updateAdventureStatements,
   searchAdventureStatement,
   addKeywordStatement,
@@ -17,7 +17,8 @@ const {
   createNewClimbAdventureStatement,
   createNewHikeAdventureStatement,
   getAdventurePicturesStatement,
-  createAdventurePictureStatement
+  createAdventurePictureStatement,
+  deleteBikeStatement
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
@@ -35,6 +36,7 @@ const {
   failedDeletion
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
+const logger = require('../../Config/logger')
 
 // if everything is working right, the only time a cache is out of date is
 // when a new adventure gets added or updated and then we update the cache
@@ -49,7 +51,7 @@ class AdventureDataLayer extends DataLayer {
   addAdventure(adventure) {
     const adventureProperties = getPropsToImport(adventure)
 
-    // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike)
+    // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike, bike)
     // and the general adventures table. This statement updates the specific one and gets the specific id
     return this.sendQuery(adventureProperties.createNewSpecificStatement, [
       [adventureProperties.specificFields]
@@ -89,7 +91,7 @@ class AdventureDataLayer extends DataLayer {
     }
 
     return Promise.all(
-      ['ski', 'climb', 'hike'].map((type) => {
+      ['ski', 'climb', 'hike', 'bike'].map((type) => {
         if (!parsedAdventures[type].length) {
           return []
         }
@@ -129,7 +131,21 @@ class AdventureDataLayer extends DataLayer {
     return this.sendQuery(selectAdventureByIdGroup[adventureType], [
       adventureId
     ])
-      .then(([[selectedAdventure]]) => selectedAdventure)
+      .then(([[selectedAdventure]]) => {
+        // convert the stringified path back to an object
+        if (
+          selectedAdventure.path !== undefined &&
+          selectedAdventure.path.length !== 0
+        ) {
+          selectedAdventure.path = JSON.parse(selectedAdventure.path)
+        }
+        if (selectedAdventure.approach_distance !== undefined) {
+          selectedAdventure.distance = selectedAdventure.approach_distance
+          delete selectedAdventure.approach_distance
+        }
+
+        return selectedAdventure
+      })
       .catch(failedQuery)
   }
 
@@ -141,7 +157,7 @@ class AdventureDataLayer extends DataLayer {
    */
   databaseGetTypedAdventures({ adventureType }) {
     // fetch all the adventures that pertain to that type from the database
-    return this.sendQuery(selectAdventuresInRangeStatement, [adventureType])
+    return this.sendQuery(selectAdventuresStatement, [adventureType])
       .then(([results]) => {
         return results.map((result) => formatAdventureForGeoJSON(result))
       })
@@ -167,8 +183,8 @@ class AdventureDataLayer extends DataLayer {
    */
   databaseEditAdventure({ field }) {
     // some of the adventure fields are in the adventures table, some are in the specific-type table
-    // if this field is in the general table then we just need to update that one. It requires another read
-    // because we need to update the searchable statement table
+    // if this field is in the general table then we just need to update that one.
+    // Editing requires another read because we need to update the searchable statement table as well
     if (adventureTemplates.general.includes(field.name)) {
       return this.sendQuery(updateAdventureStatements[field.name], [
         field.value,
@@ -179,19 +195,19 @@ class AdventureDataLayer extends DataLayer {
         .catch(failedUpdate)
     } else {
       // if we are updating one of the specific adventure fields then we just do that
+      console.log({ field })
       return this.sendQuery(
         updateAdventureStatements[
           getStatementKey(field.name, field.adventure_type)
         ],
         [field.value, field.adventure_id]
       )
-        .then(([result]) => result)
+        .then(() => false)
         .catch(failedUpdate)
     }
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.keyword
    * @param {number} params.adventureId
@@ -204,7 +220,6 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.search
    * @returns {Promise<AdventureObject[]>} a list of adventures matching the given string
@@ -216,15 +231,13 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {number} params.adventureId
    * @param {string} params.adventureType
    * @return {Promise} void
    */
   async databaseDeleteAdventure({ adventureId, adventureType }) {
-    // to delete an adventure, we have to delete all of the todos associated with that adventure,
-    // then all the completed advnetures, then all the pictures for that adventure,
+    // to delete an adventure, we have to delete all the pictures for that adventure,
     // then we can delete the adventure and the specific adventure details
     return this.getAdventureImages({ adventureId })
       .then((pictures) => {
@@ -236,7 +249,8 @@ class AdventureDataLayer extends DataLayer {
         const databaseDeleteAdventureStatement =
           (adventureType === 'ski' && deleteSkiStatement) ||
           (adventureType === 'climb' && deleteClimbStatement) ||
-          (adventureType === 'hike' && deleteHikeStatement)
+          (adventureType === 'hike' && deleteHikeStatement) ||
+          (adventureType === 'bike' && deleteBikeStatement)
 
         return this.sendQuery(databaseDeleteAdventureStatement, [
           Number(adventureId)
@@ -247,7 +261,6 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {number} params.adventureId
    * @returns {Promise<string[]>} | a list of urls attributed to that adventure
@@ -261,7 +274,6 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.url
    * @param {number} params.userId
@@ -278,7 +290,7 @@ class AdventureDataLayer extends DataLayer {
         if (Object.keys(results).length) {
           return 'adventure image saved'
         } else {
-          throw 'save adventure image failed'
+          throw 'saving adventure image failed'
         }
       })
       .catch(failedInsertion)
