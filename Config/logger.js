@@ -2,7 +2,7 @@ const winston = require('winston')
 require('winston-mongodb')
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: 'silly',
   format: winston.format.json(),
   transports: [new winston.transports.Console()]
 })
