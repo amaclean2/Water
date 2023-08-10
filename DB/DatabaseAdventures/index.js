@@ -133,10 +133,7 @@ class AdventureDataLayer extends DataLayer {
     ])
       .then(([[selectedAdventure]]) => {
         // convert the stringified path back to an object
-        if (
-          selectedAdventure.path !== undefined &&
-          selectedAdventure.path.length !== 0
-        ) {
+        if (selectedAdventure?.path?.length !== 0) {
           selectedAdventure.path = JSON.parse(selectedAdventure.path)
         }
         if (selectedAdventure.approach_distance !== undefined) {
