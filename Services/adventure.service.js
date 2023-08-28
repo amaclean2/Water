@@ -49,7 +49,7 @@ class AdventureService extends Water {
     })
 
     if (!adventure) {
-      throw "the adventure couldn't be found"
+      throw "adventure couldn't be found"
     }
 
     const todoUsers = await this.todoDB.getAdventureTodoList({

@@ -196,6 +196,7 @@ const getPropsToImport = (adventure) => {
         createNewHikeAdventureStatement
       adventureProperties.specificFields = getHikeSpecificFields(adventure)
       adventureProperties.specificIdType = 'adventure_hike_id'
+      break
     case 'bike':
       adventureProperties.createNewSpecificStatement = createNewBikeStatement
       adventureProperties.createNewGeneralStatement =
