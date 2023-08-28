@@ -45,6 +45,7 @@ CREATE TABLE ski(
     exposure INT,
     gear VARCHAR(50),
     season VARCHAR(100),
+    trail_path TEXT,
     PRIMARY KEY(id)
 );
 
@@ -68,6 +69,20 @@ CREATE TABLE hike(
     base_elevation INT,
     distance FLOAT,
     season VARCHAR(100),
+    trail_path TEXT,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE bike(
+    id INT AUTO_INCREMENT,
+    difficulty INT,
+    summit_elevation INT,
+    base_elevation INT,
+    distance FLOAT,
+    season VARCHAR(100),
+    trail_path TEXT,
+    climb INT,
+    descent INT,
     PRIMARY KEY(id)
 );
 
@@ -76,6 +91,7 @@ CREATE TABLE adventures(
     adventure_ski_id INT,
     adventure_hike_id INT,
     adventure_climb_id INT,
+    adventure_bike_id INT,
     adventure_name VARCHAR(100) NOT NULL,
     adventure_type VARCHAR(50) NOT NULL,
     bio TEXT,
@@ -178,6 +194,7 @@ CREATE INDEX adventure_type_index ON adventures(adventure_type);
 -- DROP TABLE ski;
 -- DROP TABLE climb;
 -- DROP TABLE hike;
+-- DROP TABLE bike;
 -- DROP TABLE friends;
 -- DROP TABLE messages;
 -- DROP TABLE conversation_interactions;

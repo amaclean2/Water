@@ -33,7 +33,8 @@ const {
   failedInsertion,
   failedQuery,
   failedUpdate,
-  failedDeletion
+  failedDeletion,
+  calculateCameraBounds
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
 const logger = require('../../Config/logger')
@@ -132,16 +133,25 @@ class AdventureDataLayer extends DataLayer {
       adventureId
     ])
       .then(([[selectedAdventure]]) => {
-        // convert the stringified path back to an object
-        if (
-          selectedAdventure.path !== undefined &&
-          selectedAdventure.path.length !== 0
-        ) {
-          selectedAdventure.path = JSON.parse(selectedAdventure.path)
+        if (!selectedAdventure) {
+          return null
         }
-        if (selectedAdventure.approach_distance !== undefined) {
-          selectedAdventure.distance = selectedAdventure.approach_distance
-          delete selectedAdventure.approach_distance
+
+        // convert the stringified path back to an object
+        if (['ski', 'hike', 'bike'].includes(adventureType)) {
+          if (selectedAdventure?.path?.length !== 0) {
+            selectedAdventure.path = JSON.parse(selectedAdventure.path)
+            selectedAdventure.cameraBounds = calculateCameraBounds(
+              selectedAdventure.path
+            )
+          } else if (!selectedAdventure?.path) {
+            selectedAdventure.path = []
+          }
+
+          if (selectedAdventure.approach_distance !== undefined) {
+            selectedAdventure.distance = selectedAdventure.approach_distance
+            delete selectedAdventure.approach_distance
+          }
         }
 
         return selectedAdventure
@@ -195,7 +205,6 @@ class AdventureDataLayer extends DataLayer {
         .catch(failedUpdate)
     } else {
       // if we are updating one of the specific adventure fields then we just do that
-      console.log({ field })
       return this.sendQuery(
         updateAdventureStatements[
           getStatementKey(field.name, field.adventure_type)
