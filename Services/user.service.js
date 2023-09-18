@@ -243,7 +243,9 @@ class UserService extends Water {
     return this.userDB.createUserFollowing(ids).then(() =>
       this.#buildUserObject({ initiation: { id: ids.followerId } }).then(
         (user) => {
-          const newFriend = user.friends.find(({ id }) => id === ids.leaderId)
+          const newFriend = user.friends.find(
+            ({ user_id }) => user_id === ids.leaderId
+          )
 
           const callback = testEmailCallback || handleEmailUserFollowed
 
