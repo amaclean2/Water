@@ -9,6 +9,76 @@ const {
   createNewBikeAdventureStatement
 } = require('../Statements')
 
+const sportGrades = [
+  '5.2',
+  '5.3',
+  '5.4',
+  '5.5',
+  '5.6',
+  '5.7',
+  '5.8',
+  '5.9',
+  '5.10a',
+  '5.10b',
+  '5.10c',
+  '5.10d',
+  '5.11a',
+  '5.11b',
+  '5.11c',
+  '5.11d',
+  '5.12a',
+  '5.12b',
+  '5.12c',
+  '5.12d',
+  '5.13a',
+  '5.13b',
+  '5.13c',
+  '5.13d',
+  '5.14a',
+  '5.14b',
+  '5.14c',
+  '5.14d',
+  '5.15a',
+  '5.15b',
+  '5.15c',
+  '5.15d'
+]
+
+const vGrades = [
+  'V0',
+  'V1',
+  'V2',
+  'V3',
+  'V4',
+  'V5',
+  'V6',
+  'V7',
+  'V8',
+  'V9',
+  'V10',
+  'V11',
+  'V12',
+  'V13',
+  'V14',
+  'V15',
+  'V16'
+]
+
+const iceGrades = ['WI-1', 'WI-2', 'WI-3', 'WI-4', 'WI-5', 'WI-6', 'WI-7']
+
+const convertToGrade = (difficulty, climb_type) => {
+  difficulty = difficulty.split(':')[0]
+
+  switch (climb_type) {
+    case 'boulder':
+      return `${vGrades[difficulty - 1]}:${difficulty.split(':')[1]}`
+    case 'ice':
+      return `${iceGrades[difficulty - 1]}:${difficulty.split(':')[1]}`
+    default:
+      return `${sportGrades[difficulty - 1]}:${difficulty.split(':')[1]}`
+  }
+}
+
 const formatAdventureForGeoJSON = (adventure) => {
   const newAdventure = {
     type: 'Feature',
@@ -36,7 +106,6 @@ const getSkiSpecificFields = (adventure) => [
   adventure.max_angle || 0,
   adventure.approach_distance || '',
   adventure.aspect || 'N',
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.exposure || 0,
@@ -47,7 +116,6 @@ const getSkiSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getClimbSpecificFields = (adventure) => [
-  adventure.grade || '',
   adventure.pitches || 0,
   adventure.protection || '',
   adventure.climb_type || '',
@@ -59,7 +127,6 @@ const getClimbSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getHikeSpecificFields = (adventure) => [
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.distance || 0,
@@ -69,7 +136,6 @@ const getHikeSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getBikeSpecificFields = (adventure) => [
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.distance || 0,
@@ -93,7 +159,8 @@ const getGeneralFields = (adventure) => {
     adventure.creator_id,
     adventure.nearest_city,
     adventure.public,
-    adventure.rating || 0
+    adventure.rating || 0,
+    adventure.difficulty || '0:0'
   ]
 }
 
@@ -105,21 +172,20 @@ const adventureTemplates = {
     'coordinates_lng',
     'nearest_city',
     'rating',
-    'public'
+    'public',
+    'difficulty'
   ],
   ski: [
     'approach_distance',
     'season',
     'avg_angle',
     'max_angle',
-    'difficulty',
     'summit_elevation',
     'gear',
     'base_elevation'
   ],
   climb: [
     'climb_type',
-    'grade',
     'protection',
     'pitches',
     'light_times',
@@ -256,5 +322,6 @@ module.exports = {
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
-  adventureTemplates
+  adventureTemplates,
+  convertToGrade
 }

@@ -27,7 +27,8 @@ const {
   getStatementKey,
   getPropsToImport,
   parseAdventures,
-  createSpecificProperties
+  createSpecificProperties,
+  convertToGrade
 } = require('./utils')
 const {
   failedInsertion,
@@ -37,7 +38,6 @@ const {
   calculateCameraBounds
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
-const logger = require('../../Config/logger')
 
 // if everything is working right, the only time a cache is out of date is
 // when a new adventure gets added or updated and then we update the cache
@@ -152,6 +152,12 @@ class AdventureDataLayer extends DataLayer {
             selectedAdventure.distance = selectedAdventure.approach_distance
             delete selectedAdventure.approach_distance
           }
+        } else {
+          // if it's a climb adventure
+          selectedAdventure.difficulty = convertToGrade(
+            selectedAdventure.difficulty,
+            selectedAdventure.climb_type
+          )
         }
 
         return selectedAdventure

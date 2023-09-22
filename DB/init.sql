@@ -39,7 +39,6 @@ CREATE TABLE ski(
     max_angle FLOAT,
     approach_distance VARCHAR(50),
     aspect VARCHAR(3),
-    difficulty INT,
     summit_elevation INT,
     base_elevation INT,
     exposure INT,
@@ -51,7 +50,6 @@ CREATE TABLE ski(
 
 CREATE TABLE climb(
     id INT AUTO_INCREMENT,
-    grade VARCHAR(50),
     first_ascent VARCHAR(255),
     pitches INT,
     protection VARCHAR(100),
@@ -64,7 +62,6 @@ CREATE TABLE climb(
 
 CREATE TABLE hike(
     id INT AUTO_INCREMENT,
-    difficulty INT,
     summit_elevation INT,
     base_elevation INT,
     distance FLOAT,
@@ -75,7 +72,6 @@ CREATE TABLE hike(
 
 CREATE TABLE bike(
     id INT AUTO_INCREMENT,
-    difficulty INT,
     summit_elevation INT,
     base_elevation INT,
     distance FLOAT,
@@ -94,6 +90,7 @@ CREATE TABLE adventures(
     adventure_bike_id INT,
     adventure_name VARCHAR(100) NOT NULL,
     adventure_type VARCHAR(50) NOT NULL,
+    difficulty VARCHAR(50),
     bio TEXT,
     coordinates_lat FLOAT NOT NULL,
     coordinates_lng FLOAT NOT NULL,
@@ -102,6 +99,7 @@ CREATE TABLE adventures(
     nearest_city VARCHAR(100),
     public TINYINT NOT NULL,
     rating FLOAT,
+    difficulty VARCHAR(50),
     PRIMARY KEY(id),
     FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY(adventure_ski_id) REFERENCES ski(id) ON DELETE CASCADE,

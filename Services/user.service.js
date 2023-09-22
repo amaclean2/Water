@@ -289,12 +289,42 @@ class UserService extends Water {
    * @param {boolean} params.isPublic
    * @returns {Promise<CompletedResponse>}
    */
-  completeAdventure({ userId, adventureId, isPublic }) {
+  completeAdventure({
+    userId,
+    adventureId,
+    isPublic,
+    adventureType,
+    rating,
+    difficulty
+  }) {
+    let response = null
     return this.todoDB
       .removeTodoAdventure({ adventureId, userId })
       .then(() =>
         this.completedDB.completeAdventure({ userId, adventureId, isPublic })
       )
+      .then((completionResponse) => {
+        response = completionResponse
+        return this.adventureDB.databaseEditAdventure({
+          field: {
+            name: 'difficulty',
+            value: difficulty,
+            adventure_id: adventureId,
+            adventure_type: adventureType
+          }
+        })
+      })
+      .then(() =>
+        this.adventureDB.databaseEditAdventure({
+          field: {
+            name: 'rating',
+            value: rating,
+            adventure_id: adventureId,
+            adventure_type: adventureType
+          }
+        })
+      )
+      .then(() => response)
   }
 
   /**
