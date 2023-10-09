@@ -218,9 +218,15 @@ class AdventureService extends Water {
         const [newRating, oldRating, ratingTally] = rating.split(':')
 
         if (`${oldDifficulty}:${tally}` !== dbDifficulty) {
-          return { match: false, response: 'difficulty does not match' }
+          return {
+            match: false,
+            response: `Difficulty does not match. Difficulty of adventure is ${dbDifficulty}`
+          }
         } else if (`${oldRating}:${ratingTally}` !== dbRating) {
-          return { match: false, response: 'rating does not match' }
+          return {
+            match: false,
+            response: `Rating does not match. Rating of adventure is ${dbRating}`
+          }
         } else {
           return { match: true, response: '' }
         }
