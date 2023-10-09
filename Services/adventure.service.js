@@ -203,6 +203,33 @@ class AdventureService extends Water {
   /**
    *
    * @param {Object} params
+   * @param {number} params.adventureId
+   * @param {string} params.difficulty
+   * @param {string} params.rating
+   * @returns {Promise<{match: boolean, response: string}>}
+   */
+  checkAdventureRatings({ adventureId, difficulty, rating }) {
+    return this.completedDB
+      .getAdventureRatings({ adventureId })
+      .then((ratings) => {
+        const { difficulty: dbDifficulty, rating: dbRating } = ratings
+
+        const [newDifficulty, oldDifficulty, tally] = difficulty.split(':')
+        const [newRating, oldRating, ratingTally] = rating.split(':')
+
+        if (`${oldDifficulty}:${tally}` !== dbDifficulty) {
+          return { match: false, response: 'difficulty does not match' }
+        } else if (`${oldRating}:${ratingTally}` !== dbRating) {
+          return { match: false, response: 'rating does not match' }
+        } else {
+          return { match: true, response: '' }
+        }
+      })
+  }
+
+  /**
+   *
+   * @param {Object} params
    * @param {Object} params.field | the field to update
    * @param {string} params.field.name | the name of the field to update
    * @param {string} params.field.value | the value of the field to update

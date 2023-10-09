@@ -1,3 +1,4 @@
+// create new statements
 const createNewSkiAdventureStatement =
   'INSERT INTO adventures (adventure_ski_id, adventure_name, adventure_type, bio, coordinates_lat, coordinates_lng, creator_id, nearest_city, public, rating, difficulty) VALUES ?'
 const createNewClimbAdventureStatement =
@@ -15,9 +16,11 @@ const createNewHikeStatement =
 const createNewBikeStatement =
   'INSERT INTO bike (summit_elevation, base_elevation, distance, season, trail_path, climb, descent) VALUES ?'
 
+// get adventure type
 const getAdventureTypeStatement =
   'SELECT adventure_type FROM adventures WHERE id = ?'
 
+// get all adventure details per an adventure id and type
 const selectAdventureByIdGroup = {
   ski: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, s.avg_angle AS avg_angle, s.trail_path AS path, s.max_angle AS max_angle, s.approach_distance AS approach_distance, s.aspect AS aspect, a.difficulty AS difficulty, s.summit_elevation AS summit_elevation, s.base_elevation AS base_elevation, s.exposure AS exposure, s.gear AS gear, s.season AS season FROM adventures AS a INNER JOIN ski AS s ON a.adventure_ski_id = s.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
   climb:
@@ -25,6 +28,10 @@ const selectAdventureByIdGroup = {
   hike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, h.trail_path AS path, h.summit_elevation AS summit_elevation, h.base_elevation AS base_elevation, h.distance AS distance, h.season AS season FROM adventures AS a INNER JOIN hike AS h ON a.adventure_hike_id = h.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
   bike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, b.trail_path AS path, b.summit_elevation AS summit_elevation, b.climb AS climb, b.descent AS descent, b.base_elevation AS base_elevation, b.distance AS distance, b.season AS season FROM adventures AS a INNER JOIN bike AS b ON b.adventure_bike_id = b.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'
 }
+
+// get an adventure rating and difficulty
+const getAdventureRatingAndDifficulty =
+  'SELECT rating, difficulty, adventure_id, adventure_type FROM adventures WHERE adventure_id = ?'
 
 const addKeywordStatement =
   'REPLACE INTO searchable_adventures (searchable_text, adventure_id) VALUES (?, ?)'
@@ -39,6 +46,7 @@ const selectAdventuresStatement =
 const getSpecificAdventureId =
   "SELECT adventure_type, CASE WHEN adventure_type = 'ski' THEN adventure_ski_id WHEN adventure_type = 'hike' THEN adventure_hike_id WHEN adventure_type = 'bike' THEN adventure_bike_id ELSE adventure_climb_id END AS specific_adventure_id FROM adventures WHERE id = ?"
 
+// update adventure property
 const updateAdventureStatements = {
   adventure_name: 'UPDATE adventures SET adventure_name = ? WHERE id = ?',
   difficulty: 'UPDATE adventures SET difficulty = ? WHERE id = ?',
@@ -127,6 +135,7 @@ module.exports = {
   createNewBikeStatement,
   selectAdventureByIdGroup,
   selectAdventuresStatement,
+  getAdventureRatingAndDifficulty,
   updateAdventureStatements,
   getSpecificAdventureId,
   deleteSkiStatement,

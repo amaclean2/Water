@@ -71,7 +71,7 @@ const convertToGrade = (difficulty, climb_type) => {
 
   switch (climb_type) {
     case 'boulder':
-      return `${vGrades[difficulty - 1]}:${difficulty.split(':')[1]}`
+      return `${vGrades[difficulty]}:${difficulty.split(':')[1] ?? 0}`
     case 'ice':
       return `${iceGrades[difficulty - 1]}:${difficulty.split(':')[1]}`
     default:
