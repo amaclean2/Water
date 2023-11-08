@@ -27,8 +27,7 @@ const {
   getStatementKey,
   getPropsToImport,
   parseAdventures,
-  createSpecificProperties,
-  convertToGrade
+  createSpecificProperties
 } = require('./utils')
 const {
   failedInsertion,
@@ -152,13 +151,11 @@ class AdventureDataLayer extends DataLayer {
             selectedAdventure.distance = selectedAdventure.approach_distance
             delete selectedAdventure.approach_distance
           }
-        } else {
-          // if it's a climb adventure
-          selectedAdventure.difficulty = convertToGrade(
-            selectedAdventure.difficulty,
-            selectedAdventure.climb_type
-          )
         }
+
+        selectedAdventure.rating = `${Math.round(
+          selectedAdventure.rating.split(':')[0]
+        )}:${selectedAdventure.rating.split(':')[1]}`
 
         return selectedAdventure
       })

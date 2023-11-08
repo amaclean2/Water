@@ -31,7 +31,7 @@ const selectAdventureByIdGroup = {
 
 // get an adventure rating and difficulty
 const getAdventureRatingAndDifficulty =
-  'SELECT rating, difficulty, adventure_id, adventure_type FROM adventures WHERE adventure_id = ?'
+  'SELECT rating, difficulty, id AS adventure_id, adventure_type FROM adventures WHERE id = ?'
 
 const addKeywordStatement =
   'REPLACE INTO searchable_adventures (searchable_text, adventure_id) VALUES (?, ?)'
