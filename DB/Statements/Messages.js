@@ -26,7 +26,7 @@ u.id AS user_id
 FROM messages AS m
 INNER JOIN users AS u ON m.sender_id = u.id
 WHERE m.conversation_id = ?
-ORDER BY m.id ASC
+ORDER BY m.id DESC
 `
 
 module.exports = {
