@@ -87,7 +87,6 @@ class AdventureService extends Water {
    */
 
   /**
-   *
    * @param {Object} params
    * @param {AdventureObject} params.adventureObject | an object containing something...
    * @returns {Promise<CreateAdventureResponse>} | an object containing the adventure and the geojson list
@@ -153,7 +152,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.adventureType | the adventure type to get
    * @returns {Promise<AdventureGeoJsonObject>} a list of adventures formatted as geoJson
@@ -175,7 +173,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.search | the search string to use against the users list
    * @returns {Promise<AdventureObject[]>} a list of adventures
@@ -187,7 +184,27 @@ class AdventureService extends Water {
   }
 
   /**
-   *
+   * @param {Object} params
+   * @param {string} params.adventure_type
+   * @param {Object} params.coordinates
+   * @param {number} params.coordinates.lat
+   * @param {number} params.coordinates.lng
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} a list of adventures ordered from closest to the given coordinates within the count limit provided
+   */
+  getClosestAdventures({ adventure_type, coordinates, count = 10 }) {
+    if (!(adventure_type || coordinates.lat || coordinates.lng)) {
+      throw 'adventure_type and coordinates are required'
+    }
+
+    return this.adventureDB.getClosestAdventures({
+      adventureType,
+      coordinates,
+      count
+    })
+  }
+
+  /**
    * @param {Object} params
    * @param {number} params.adventureId | the id of the adventure to search for
    * @param {string} params.adventureType | the type of the adventure to search for
@@ -201,7 +218,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {number} params.adventureId
    * @param {string} params.difficulty
@@ -234,7 +250,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {Object} params.field | the field to update
    * @param {string} params.field.name | the name of the field to update

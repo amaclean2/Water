@@ -28,6 +28,14 @@ const selectAdventureByIdGroup = {
   hike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, h.trail_path AS path, h.summit_elevation AS summit_elevation, h.base_elevation AS base_elevation, h.distance AS distance, h.season AS season FROM adventures AS a INNER JOIN hike AS h ON a.adventure_hike_id = h.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
   bike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, b.trail_path AS path, b.summit_elevation AS summit_elevation, b.climb AS climb, b.descent AS descent, b.base_elevation AS base_elevation, b.distance AS distance, b.season AS season FROM adventures AS a INNER JOIN bike AS b ON b.adventure_bike_id = b.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'
 }
+// get adventures by distance within a type
+const getCloseAdventures = {
+  ski: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_ski_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
+  climb:
+    'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_climb_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
+  hike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_hike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
+  bike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_bike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?'
+}
 
 // get an adventure rating and difficulty
 const getAdventureRatingAndDifficulty =
@@ -145,5 +153,6 @@ module.exports = {
   searchAdventureStatement,
   getAdventureTypeStatement,
   getKeywordsStatement,
-  addKeywordStatement
+  addKeywordStatement,
+  getCloseAdventures
 }
