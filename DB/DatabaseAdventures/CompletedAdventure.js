@@ -3,7 +3,8 @@ const {
   selectActivitiesByAdventureStatement,
   getCompletedAdventureByUserStatement,
   createActivityStatement,
-  getCompletedData
+  getCompletedData,
+  getAdventureRatingAndDifficulty
 } = require('../Statements')
 const { failedQuery, failedInsertion } = require('../utils')
 
@@ -35,9 +36,9 @@ class CompletedAdventureDataLayer extends DataLayer {
   /**
    *
    * @param {Object} params
-   * @param {number} userId
-   * @param {number} adventureId
-   * @param {boolean} isPublic
+   * @param {number} params.userId
+   * @param {number} params.adventureId
+   * @param {boolean} params.isPublic
    * @returns {Promise} the id of the new completion
    */
   completeAdventure({ adventureId, userId, isPublic }) {
@@ -68,6 +69,24 @@ class CompletedAdventureDataLayer extends DataLayer {
         }
       })
       .catch(failedInsertion)
+  }
+
+  /**
+   *
+   * @param {Object} params
+   * @param {number} params.adventureId
+   * @returns {Promise} the rating, difficulty, adventure_id, and adventure_type of the adventure_id provided
+   */
+  getAdventureRatings({ adventureId }) {
+    return this.sendQuery(getAdventureRatingAndDifficulty, [adventureId]).then(
+      ([[adventureRatings]]) => {
+        if (!adventureRatings) {
+          throw 'no adventure found'
+        } else {
+          return adventureRatings
+        }
+      }
+    )
   }
 }
 

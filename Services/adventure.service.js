@@ -87,7 +87,6 @@ class AdventureService extends Water {
    */
 
   /**
-   *
    * @param {Object} params
    * @param {AdventureObject} params.adventureObject | an object containing something...
    * @returns {Promise<CreateAdventureResponse>} | an object containing the adventure and the geojson list
@@ -153,7 +152,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.adventureType | the adventure type to get
    * @returns {Promise<AdventureGeoJsonObject>} a list of adventures formatted as geoJson
@@ -175,7 +173,6 @@ class AdventureService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {string} params.search | the search string to use against the users list
    * @returns {Promise<AdventureObject[]>} a list of adventures
@@ -187,7 +184,36 @@ class AdventureService extends Water {
   }
 
   /**
-   *
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {Object} params.coordinates
+   * @param {number} params.coordinates.lat
+   * @param {number} params.coordinates.lng
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} a list of adventures ordered from closest to the given coordinates within the count limit provided
+   */
+  getClosestAdventures({ adventureType, coordinates, count = 10 }) {
+    if (!(adventureType && coordinates.lat && coordinates.lng)) {
+      throw 'adventureType and coordinates are required'
+    }
+
+    if (
+      typeof adventureType !== 'string' ||
+      typeof coordinates.lat !== 'number' ||
+      typeof coordinates.lng !== 'number' ||
+      (count && typeof count !== 'number')
+    ) {
+      throw 'adventureType must be a string. Coordinates must be numbers and count must be a number'
+    }
+
+    return this.adventureDB.getClosestAdventures({
+      adventureType,
+      coordinates,
+      count
+    })
+  }
+
+  /**
    * @param {Object} params
    * @param {number} params.adventureId | the id of the adventure to search for
    * @param {string} params.adventureType | the type of the adventure to search for
@@ -201,7 +227,38 @@ class AdventureService extends Water {
   }
 
   /**
-   *
+   * @param {Object} params
+   * @param {number} params.adventureId
+   * @param {string} params.difficulty
+   * @param {string} params.rating
+   * @returns {Promise<{match: boolean, response: string}>}
+   */
+  checkAdventureRatings({ adventureId, difficulty, rating }) {
+    return this.completedDB
+      .getAdventureRatings({ adventureId })
+      .then((ratings) => {
+        const { difficulty: dbDifficulty, rating: dbRating } = ratings
+
+        const [newDifficulty, oldDifficulty, tally] = difficulty.split(':')
+        const [newRating, oldRating, ratingTally] = rating.split(':')
+
+        if (`${oldDifficulty}:${tally}` !== dbDifficulty) {
+          return {
+            match: false,
+            response: `Difficulty does not match. Difficulty of adventure is ${dbDifficulty}`
+          }
+        } else if (`${oldRating}:${ratingTally}` !== dbRating) {
+          return {
+            match: false,
+            response: `Rating does not match. Rating of adventure is ${dbRating}`
+          }
+        } else {
+          return { match: true, response: '' }
+        }
+      })
+  }
+
+  /**
    * @param {Object} params
    * @param {Object} params.field | the field to update
    * @param {string} params.field.name | the name of the field to update

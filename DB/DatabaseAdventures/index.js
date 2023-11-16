@@ -18,7 +18,8 @@ const {
   createNewHikeAdventureStatement,
   getAdventurePicturesStatement,
   createAdventurePictureStatement,
-  deleteBikeStatement
+  deleteBikeStatement,
+  getCloseAdventures
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
@@ -45,7 +46,6 @@ const logger = require('../../Config/logger')
 
 class AdventureDataLayer extends DataLayer {
   /**
-   *
    * @param {Object} adventure | the adventure object to be added
    * @returns {Promise} the new adventure id
    */
@@ -122,7 +122,6 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {number} params.adventureId
    * @param {string} params.adventureType
@@ -154,13 +153,36 @@ class AdventureDataLayer extends DataLayer {
           }
         }
 
+        selectedAdventure.rating = `${Math.round(
+          selectedAdventure.rating.split(':')[0]
+        )}:${selectedAdventure.rating.split(':')[1]}`
+
         return selectedAdventure
       })
       .catch(failedQuery)
   }
 
   /**
-   *
+   * @param {Object} params
+   * @param {string} params.adventureType | 'ski' | 'hike' | 'climb' | 'bike'
+   * @param {Object} params.coordinates
+   * @param {number} params.coordinates.lat
+   * @param {number} params.coordiantes.lng
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} | returns a promise containing an array of adventure objects that are closest to the given coordinates
+   */
+  getClosestAdventures({ adventureType, coordinates, count }) {
+    logger.info({ centerCoordinatesOfAdventures: coordinates })
+    return this.sendQuery(getCloseAdventures[adventureType], [
+      coordinates.lat,
+      coordinates.lng,
+      count
+    ])
+      .then(([results]) => results)
+      .catch(failedQuery)
+  }
+
+  /**
    * @param {Object} params
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject[]>}
@@ -182,7 +204,6 @@ class AdventureDataLayer extends DataLayer {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {Object} params.field
    * @param {string} params.field.name

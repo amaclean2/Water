@@ -36,7 +36,6 @@ const getSkiSpecificFields = (adventure) => [
   adventure.max_angle || 0,
   adventure.approach_distance || '',
   adventure.aspect || 'N',
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.exposure || 0,
@@ -47,7 +46,6 @@ const getSkiSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getClimbSpecificFields = (adventure) => [
-  adventure.grade || '',
   adventure.pitches || 0,
   adventure.protection || '',
   adventure.climb_type || '',
@@ -59,7 +57,6 @@ const getClimbSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getHikeSpecificFields = (adventure) => [
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.distance || 0,
@@ -69,7 +66,6 @@ const getHikeSpecificFields = (adventure) => [
 
 // all properties below must be in order of the database query
 const getBikeSpecificFields = (adventure) => [
-  adventure.difficulty || 0,
   adventure.summit_elevation || 0,
   adventure.base_elevation || 0,
   adventure.distance || 0,
@@ -93,7 +89,8 @@ const getGeneralFields = (adventure) => {
     adventure.creator_id,
     adventure.nearest_city,
     adventure.public,
-    adventure.rating || 0
+    adventure.rating || 0,
+    adventure.difficulty || '0:0'
   ]
 }
 
@@ -105,21 +102,20 @@ const adventureTemplates = {
     'coordinates_lng',
     'nearest_city',
     'rating',
-    'public'
+    'public',
+    'difficulty'
   ],
   ski: [
     'approach_distance',
     'season',
     'avg_angle',
     'max_angle',
-    'difficulty',
     'summit_elevation',
     'gear',
     'base_elevation'
   ],
   climb: [
     'climb_type',
-    'grade',
     'protection',
     'pitches',
     'light_times',

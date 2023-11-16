@@ -190,7 +190,10 @@ describe('user service layer testing', () => {
         await serviceHandler.userService.completeAdventure({
           userId,
           adventureId: newAdventure.id,
-          isPublic: true
+          adventureType: newAdventure.adventure_type,
+          isPublic: true,
+          rating: '1:1',
+          difficulty: '1:1'
         })
 
       expect(addCompletedResponse.userCompleted).toBeDefined()

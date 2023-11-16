@@ -72,7 +72,7 @@ class MessageDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number[]} params.userIds
+   * @param {number[]} params.userIds | all the users in the conversation
    * @returns {Promise<NewConversationReturnType>} | an object containing the
    * conversationId of the new conversation
    */
