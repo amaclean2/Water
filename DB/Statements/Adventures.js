@@ -30,11 +30,11 @@ const selectAdventureByIdGroup = {
 }
 // get adventures by distance within a type
 const getCloseAdventures = {
-  ski: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_ski_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
+  ski: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_ski_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?',
   climb:
-    'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_climb_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
-  hike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_hike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?',
-  bike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_bike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng + ?, 2)) LIMIT ?'
+    'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_climb_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?',
+  hike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_hike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?',
+  bike: 'SELECT id, adventure_name, difficulty, rating, nearest_city, bio FROM adventures WHERE public = 1 AND adventure_bike_id IS NOT NULL ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?'
 }
 
 // get an adventure rating and difficulty

@@ -38,6 +38,7 @@ const {
   calculateCameraBounds
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
+const logger = require('../../Config/logger')
 
 // if everything is working right, the only time a cache is out of date is
 // when a new adventure gets added or updated and then we update the cache
@@ -171,6 +172,7 @@ class AdventureDataLayer extends DataLayer {
    * @returns {Promise<Object[]>} | returns a promise containing an array of adventure objects that are closest to the given coordinates
    */
   getClosestAdventures({ adventureType, coordinates, count }) {
+    logger.info({ centerCoordinatesOfAdventures: coordinates })
     return this.sendQuery(getCloseAdventures[adventureType], [
       coordinates.lat,
       coordinates.lng,

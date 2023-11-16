@@ -185,16 +185,25 @@ class AdventureService extends Water {
 
   /**
    * @param {Object} params
-   * @param {string} params.adventure_type
+   * @param {string} params.adventureType
    * @param {Object} params.coordinates
    * @param {number} params.coordinates.lat
    * @param {number} params.coordinates.lng
    * @param {number} params.count
    * @returns {Promise<Object[]>} a list of adventures ordered from closest to the given coordinates within the count limit provided
    */
-  getClosestAdventures({ adventure_type, coordinates, count = 10 }) {
-    if (!(adventure_type || coordinates.lat || coordinates.lng)) {
-      throw 'adventure_type and coordinates are required'
+  getClosestAdventures({ adventureType, coordinates, count = 10 }) {
+    if (!(adventureType && coordinates.lat && coordinates.lng)) {
+      throw 'adventureType and coordinates are required'
+    }
+
+    if (
+      typeof adventureType !== 'string' ||
+      typeof coordinates.lat !== 'number' ||
+      typeof coordinates.lng !== 'number' ||
+      (count && typeof count !== 'number')
+    ) {
+      throw 'adventureType must be a string. Coordinates must be numbers and count must be a number'
     }
 
     return this.adventureDB.getClosestAdventures({
