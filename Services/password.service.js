@@ -13,14 +13,15 @@ class PasswordService extends Water {
   sendPasswordResetEmail({ email }, testEmailCallback) {
     return this.userDB.getPasswordResetToken({ email }).then((resetToken) => {
       if (resetToken) {
-        resetToken = resetToken.split(':').pop()
-        const callback = testEmailCallback || handleEmailReset
+        resetToken = resetToken.split(':')[1]
+        const callback =
+          testEmailCallback !== undefined ? testEmailCallback : handleEmailReset
 
         return callback({ email, resetToken }).then(
-          () => 'password reset email sent'
+          () => `password reset email sent to ${email}`
         )
       } else {
-        return 'no account was found with that email'
+        throw `no account was found with email: ${email}`
       }
     })
   }
@@ -32,17 +33,15 @@ class PasswordService extends Water {
    * @param {string} params.resetToken | if this matches whats in the database then update the password
    * @returns {Promise<string>} | a message about the password being updated
    */
-  saveNewPassword({ newPassword, userId, resetToken }) {
+  saveNewPassword({ newPassword, resetToken }) {
     return this.userDB
-      .checkPasswordResetToken({ userId, token: resetToken })
-      .then((validId) => validId?.id === userId)
-      .then((matches) => {
-        if (matches) {
+      .checkPasswordResetToken({ token: resetToken })
+      .then((userId) => {
+        if (userId && typeof userId === 'number') {
           const newHashedPassword = hashPassword(newPassword)
           return this.userDB.replaceUserPassword({
             newHashedPassword,
-            userId,
-            resetToken
+            userId
           })
         } else {
           throw 'your reset token is invalid'

@@ -83,7 +83,7 @@ class MessagingService extends Water {
           message_body: messageBody,
           user_id: senderId,
           conversation_id: conversationId,
-          data_reference: dataReference
+          data_reference: dataReference ?? null
         }
       })
       .then(() =>

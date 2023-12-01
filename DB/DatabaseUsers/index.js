@@ -89,7 +89,7 @@ class UserDataLayer extends DataLayer {
    */
   getUserById({ userId }) {
     return this.sendQuery(getUserByIdStatement, [userId])
-      .then(([results]) => (!results.length ? null : results[0]))
+      .then(([results]) => (results.length ? results[0] : null))
       .catch(failedQuery)
   }
 
@@ -102,7 +102,13 @@ class UserDataLayer extends DataLayer {
   getPasswordResetToken({ email }) {
     return this.sendQuery(getPasswordHashStatement, [email])
       .then(([results]) => {
-        return !results.length ? null : results[0].password
+        if (!results.length) {
+          return null
+        }
+
+        const hashedToken = results[0].password
+        const shortToken = hashedToken.subString(hashedToken.length - 10)
+        return shortToken
       })
       .catch(failedQuery)
   }
@@ -111,16 +117,12 @@ class UserDataLayer extends DataLayer {
    *
    * @param {Object} params
    * @param {string} params.token
-   * @param {number} params.userId
    * @returns {Promise<number|null>} an id if that token exists or null otherwise
    */
-  checkPasswordResetToken({ userId, token }) {
-    return this.sendQuery(checkPasswordResetTokenStatement, [
-      userId,
-      `%${token}`
-    ])
-      .then((result) => {
-        return result ? result[0][0] : false
+  checkPasswordResetToken({ token }) {
+    return this.sendQuery(checkPasswordResetTokenStatement, [`%${token}`])
+      .then(([results]) => {
+        return results.length ? results[0].id : null
       })
       .catch(failedQuery)
   }
@@ -132,9 +134,8 @@ class UserDataLayer extends DataLayer {
    * @param {number} params.userId
    * @return {Promise} void
    */
-  replaceUserPassword({ newHashedPassword, userId, resetToken }) {
+  replaceUserPassword({ newHashedPassword, userId }) {
     return this.sendQuery(updateNewPasswordStatement, [
-      `%${resetToken}`,
       newHashedPassword,
       userId
     ]).catch(failedUpdate)
