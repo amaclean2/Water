@@ -16,20 +16,18 @@ class MessagingService extends Water {
   createConversation({ userIds }) {
     // create a new row in the conversations table
     // create new rows in the conversation_interactions table for each user in the conversation
-    return this.messageDB
-      .findConversation({ userIds })
-      .then((conversationExists) => {
-        if (conversationExists) {
-          return {
-            conversation_exists: true,
-            conversation: conversationExists
-          }
-        } else {
-          return this.messageDB.saveNewConversation({
-            userIds
-          })
+    return this.messageDB.findConversation({ userIds }).then((conversation) => {
+      if (conversation) {
+        return {
+          conversation_exists: true,
+          conversation
         }
-      })
+      } else {
+        return this.messageDB.saveNewConversation({
+          userIds
+        })
+      }
+    })
   }
 
   /**

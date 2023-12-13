@@ -107,7 +107,7 @@ class UserDataLayer extends DataLayer {
         }
 
         const hashedToken = results[0].password
-        const shortToken = hashedToken.subString(hashedToken.length - 10)
+        const shortToken = hashedToken.substring(hashedToken.length - 10)
         return shortToken
       })
       .catch(failedQuery)

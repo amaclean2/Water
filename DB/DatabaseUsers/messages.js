@@ -85,7 +85,7 @@ class MessageDataLayer extends DataLayer {
           userIds.map((userId) => [userId, conversationId, false])
         ])
       })
-      .then(() => ({ conversationId: scopedId }))
+      .then(() => ({ conversation_id: scopedId }))
       .catch(failedInsertion)
   }
 

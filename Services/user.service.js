@@ -95,6 +95,7 @@ class UserService extends Water {
    * @param {string} params.confirmPassword | verify intentional password
    * @param {string} params.firstName | user first_name
    * @param {string} params.lastName | user last_name
+   * @param {boolean} params.native | stores in the token whether the connected client is an app or a web page
    * @returns {Promise<NewUserResponse>} an object containing a new user and a token
    */
   async addNewUser({
@@ -103,7 +104,8 @@ class UserService extends Water {
     confirmPassword,
     firstName,
     lastName,
-    baseImageUrl
+    baseImageUrl,
+    native
   }) {
     if (password !== confirmPassword) {
       throw 'passwords do not match'
@@ -115,7 +117,6 @@ class UserService extends Water {
     const hashedPassword = hashPassword(password)
 
     const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
-
     if (userExists) {
       throw 'An account with this email aready exists. Please try a different email or login with that account.'
     }
@@ -126,7 +127,6 @@ class UserService extends Water {
       lastName,
       password: hashedPassword
     })
-
     const { fileName } = await createDefaultProfilePicture({
       directory: process.env.FILE_STORAGE_PATH,
       userId
@@ -139,7 +139,6 @@ class UserService extends Water {
       fieldName: 'profile_picture_url',
       fieldValue: profileImageUrl
     })
-
     const user = await this.#buildUserObject({
       initiation: {
         providedObject: {
@@ -158,16 +157,17 @@ class UserService extends Water {
       userId
     })
 
-    return { user, token: this.auth.issue({ id: userId }) }
+    return { user, token: this.auth.issue({ id: userId, native }) }
   }
 
   /**
    * @param {Object} params
    * @param {string} params.password
    * @param {string} params.email
+   * @param {boolean} params.native | stores in the token whether the connected client is an app or a web page
    * @returns {Promise<NewUserResponse>} an object with the user and a token
    */
-  async loginWithEmailAndPassword({ email, password }) {
+  async loginWithEmailAndPassword({ email, password, native }) {
     const checkUser = await this.userDB.checkIfUserExistsByEmail({ email })
 
     if (!checkUser)
@@ -177,7 +177,7 @@ class UserService extends Water {
       initiation: { id: checkUser },
       password
     })
-    const token = this.auth.issue({ id: user.id })
+    const token = this.auth.issue({ id: user.id, native })
     return { user, token }
   }
 
@@ -287,6 +287,9 @@ class UserService extends Water {
    * @param {number} params.userId
    * @param {number} params.adventureId
    * @param {boolean} params.isPublic
+   * @param {string} params.adventureType
+   * @param {string} params.rating
+   * @param {string} params.difficulty
    * @returns {Promise<CompletedResponse>}
    */
   completeAdventure({

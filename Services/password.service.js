@@ -13,7 +13,6 @@ class PasswordService extends Water {
   sendPasswordResetEmail({ email }, testEmailCallback) {
     return this.userDB.getPasswordResetToken({ email }).then((resetToken) => {
       if (resetToken) {
-        resetToken = resetToken.split(':')[1]
         const callback =
           testEmailCallback !== undefined ? testEmailCallback : handleEmailReset
 
