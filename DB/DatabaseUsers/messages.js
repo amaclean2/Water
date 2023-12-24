@@ -148,6 +148,11 @@ class MessageDataLayer extends DataLayer {
       .catch(failedQuery)
   }
 
+  /**
+   * @param {Object} params
+   * @param {number} params.conversationId
+   * @returns {Promise<MessageResponse[]>}
+   */
   getMessagesPerConversation({ conversationId }) {
     return this.sendQuery(getConversationMessagesStatement, [conversationId])
       .then(([results]) => results)

@@ -28,6 +28,7 @@ INNER JOIN users AS u ON m.sender_id = u.id
 WHERE m.conversation_id = ?
 ORDER BY m.id DESC
 `
+const deleteConversationStatement = `DELETE FROM conversations WHERE id = ?`
 
 module.exports = {
   createNewMessageStatement,
@@ -39,5 +40,6 @@ module.exports = {
   setLastMessageStatement,
   clearUnreadStatement,
   getConversationMessagesStatement,
-  findConversationStatement
+  findConversationStatement,
+  deleteConversationStatement
 }

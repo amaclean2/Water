@@ -1,6 +1,8 @@
+const fs = require('fs')
 const Water = require('.')
 const { handleEmailUserFollowed } = require('./utils/email')
 const SearchService = require('./search.service')
+const MessagingService = require('./messages.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
 const {
   createThumb,
@@ -14,6 +16,7 @@ class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
     this.search = new SearchService(sendQuery, jwtSecret)
+    this.message = new MessagingService(sendQuery, jwtSecret)
   }
 
   /**
@@ -107,57 +110,79 @@ class UserService extends Water {
     baseImageUrl,
     native
   }) {
-    if (password !== confirmPassword) {
-      throw 'passwords do not match'
-    }
-    if (password.length < 5 || password.length > 50) {
-      throw 'password length must be between 5 and 50 characters'
-    }
-
-    const hashedPassword = hashPassword(password)
-
-    const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
-    if (userExists) {
-      throw 'An account with this email aready exists. Please try a different email or login with that account.'
-    }
-
-    const { userId } = await this.userDB.addUserToDatabase({
-      email,
-      firstName,
-      lastName,
-      password: hashedPassword
-    })
-    const { fileName } = await createDefaultProfilePicture({
-      directory: process.env.FILE_STORAGE_PATH,
-      userId
-    })
-
-    const profileImageUrl = `${baseImageUrl}profile/${fileName}`
-
-    await this.userDB.updateDatabaseUser({
-      userId,
-      fieldName: 'profile_picture_url',
-      fieldValue: profileImageUrl
-    })
-    const user = await this.#buildUserObject({
-      initiation: {
-        providedObject: {
-          email,
-          password,
-          first_name: firstName,
-          last_name: lastName,
-          id: userId,
-          profile_picture_url: profileImageUrl
-        }
+    try {
+      if (password !== confirmPassword) {
+        throw 'passwords do not match'
       }
-    })
+      if (password.length < 5 || password.length > 50) {
+        throw 'password length must be between 5 and 50 characters'
+      }
 
-    this.search.saveUserKeywords({
-      searchableFields: user,
-      userId
-    })
+      const hashedPassword = hashPassword(password)
 
-    return { user, token: this.auth.issue({ id: userId, native }) }
+      const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
+      if (userExists) {
+        throw 'An account with this email aready exists. Please try a different email or login with that account.'
+      }
+
+      const { userId } = await this.userDB.addUserToDatabase({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword
+      })
+
+      let profileImageUrl
+      if (process.env.NODE_ENV === 'production') {
+        const { fileName } = await createDefaultProfilePicture({
+          directory: process.env.FILE_STORAGE_PATH,
+          userId
+        })
+
+        profileImageUrl = `${baseImageUrl}profile/${fileName}`
+
+        await this.userDB.updateDatabaseUser({
+          userId,
+          fieldName: 'profile_picture_url',
+          fieldValue: profileImageUrl
+        })
+      } else {
+        profileImageUrl = ''
+      }
+
+      const user = await this.#buildUserObject({
+        initiation: {
+          providedObject: {
+            email,
+            password,
+            first_name: firstName,
+            last_name: lastName,
+            id: userId,
+            profile_picture_url: profileImageUrl
+          }
+        }
+      })
+
+      this.search.saveUserKeywords({
+        searchableFields: user,
+        userId
+      })
+
+      const { conversation_id } = await this.message.createConversation({
+        userIds: [userId, process.env.ADMIN_ID]
+      })
+
+      await this.message.sendMessage({
+        conversationId: conversation_id,
+        senderId: process.env.ADMIN_ID,
+        messageBody: fs.readFileSync(process.env.PATH_TO_INTRO_TEXT, 'utf-8'),
+        dataReference: ''
+      })
+
+      return { user, token: this.auth.issue({ id: userId, native }) }
+    } catch (error) {
+      console.log({ error })
+    }
   }
 
   /**

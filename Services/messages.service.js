@@ -98,6 +98,11 @@ class MessagingService extends Water {
       )
       .then(() => responseBody)
   }
+
+  /**
+   *
+   */
+  deleteConversation({}) {}
 }
 
 module.exports = MessagingService
