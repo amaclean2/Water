@@ -32,6 +32,16 @@ class MessagingService extends Water {
 
   /**
    * @param {Object} params
+   * @param {number} params.userId | the new user in the conversation
+   * @param {number} params.conversationId | then conversation to be modified
+   * @returns {Promise<void>} | if everything goes right, there shouldn't be anything to return
+   */
+  expandConversation({ userId, conversationId }) {
+    return this.messageDB.addUserToConversation({ userId, conversationId })
+  }
+
+  /**
+   * @param {Object} params
    * @param {number} params.userId
    * @returns {Promise<ConversationResponseType>} | an object of conversations where the key
    * is the conversation id and the value is the conversation details

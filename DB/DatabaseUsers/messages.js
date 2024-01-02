@@ -91,6 +91,20 @@ class MessageDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
+   * @param {number} params.userId | the new user in the conversation
+   * @param {number} params.conversationId | then conversation to be modified
+   * @returns {Promise<string>} | a string saying the user was added
+   */
+  addUserToConversation({ userId, conversationId }) {
+    return this.sendQuery(createNewInteractionsStatement, [
+      [userId, conversationId, true]
+    ])
+      .then(() => 'user added to conversation')
+      .catch(failedInsertion)
+  }
+
+  /**
+   * @param {Object} params
    * @param {number[]} params.userIds
    * @returns {Promise<number|boolean>} | the conversation_id if the two users are in a conversation otherwise false
    */
