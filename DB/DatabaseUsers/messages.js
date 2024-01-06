@@ -1,4 +1,5 @@
 const DataLayer = require('..')
+const logger = require('../../Config/logger')
 const {
   createNewMessageStatement,
   createNewConversationStatement,
@@ -96,8 +97,12 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<string>} | a string saying the user was added
    */
   addUserToConversation({ userId, conversationId }) {
+    if (typeof userId === 'number' && typeof conversationId === 'number') {
+      logger.info('received userId and conversationId from api')
+    }
+
     return this.sendQuery(createNewInteractionsStatement, [
-      [userId, conversationId, true]
+      [[userId, conversationId, true]]
     ])
       .then(() => 'user added to conversation')
       .catch(failedInsertion)

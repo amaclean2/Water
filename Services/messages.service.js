@@ -1,4 +1,5 @@
 const Water = require('.')
+const logger = require('../Config/logger')
 const SearchService = require('./search.service')
 
 class MessagingService extends Water {
@@ -37,7 +38,12 @@ class MessagingService extends Water {
    * @returns {Promise<void>} | if everything goes right, there shouldn't be anything to return
    */
   expandConversation({ userId, conversationId }) {
-    return this.messageDB.addUserToConversation({ userId, conversationId })
+    return this.messageDB
+      .addUserToConversation({ userId, conversationId })
+      .then(logger.info)
+      .catch((error) =>
+        logger.error(`failed to add user to conversation: ${error}`)
+      )
   }
 
   /**
