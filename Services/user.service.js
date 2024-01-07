@@ -11,6 +11,7 @@ const {
   createDefaultProfilePicture,
   removeImage
 } = require('./utils/sharp')
+const logger = require('../Config/logger')
 
 class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
@@ -181,7 +182,7 @@ class UserService extends Water {
 
       return { user, token: this.auth.issue({ id: userId, native }) }
     } catch (error) {
-      console.log({ error })
+      logger.error(error)
     }
   }
 

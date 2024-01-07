@@ -1,22 +1,26 @@
 const logger = require('../Config/logger')
 
-const failedInsertion = (error) => {
-  logger.info('DATABASE_INSERTION_FAILED', error)
+const failedInsertion = async (error) => {
+  logger.error('DATABASE_INSERTION_FAILED')
+  logger.error(error)
   throw error
 }
 
-const failedQuery = (error) => {
-  logger.info('DATABASE_QUERY_FAILED', error)
+const failedQuery = async (error) => {
+  logger.error('DATABASE_QUERY_FAILED')
+  logger.error(error)
   throw error
 }
 
-const failedUpdate = (error) => {
-  logger.info('DATABASE_UPDATE_FAILED', error)
+const failedUpdate = async (error) => {
+  logger.error('DATABASE_UPDATE_FAILED')
+  logger.error(error)
   throw error
 }
 
-const failedDeletion = (error) => {
-  logger.info('DATABASE_DELETION_FAILED', error)
+const failedDeletion = async (error) => {
+  logger.info('DATABASE_DELETION_FAILED')
+  logger.error(error)
   throw error
 }
 
