@@ -120,8 +120,13 @@ const removeImage = async ({ url }) => {
       fs.unlink(
         `${process.env.FILE_STORAGE_PATH}/profile${finalPath}`,
         (error) => {
-          error && reject(error)
-          resolve('image removed successfully')
+          if (error.errno.toString() = '-2') {
+            return resolve('image already removed')
+          } else if (error) {
+            return reject(error)
+          }
+
+          return resolve('image removed successfully')
         }
       )
     })
@@ -131,9 +136,13 @@ const removeImage = async ({ url }) => {
     finalPath = finalPath?.replace('thumbs/', '')
     const mainRemoval = new Promise((resolve, reject) => {
       fs.unlink(`${process.env.FILE_STORAGE_PATH}/${finalPath}`, (error) => {
-        error && reject(error)
+        if (error.errno.toString() = '-2') {
+          return resolve('image already removed')
+        } else if (error) {
+          return reject(error)
+        }
 
-        resolve('image removed successfully')
+        return resolve('image removed successfully')
       })
     })
 
@@ -141,9 +150,13 @@ const removeImage = async ({ url }) => {
       fs.unlink(
         `${process.env.FILE_STORAGE_PATH}/thumbs/${finalPath}`,
         (error) => {
-          error && reject(error)
-
-          resolve('thumb removed successfully')
+          if (error.errno.toString() = '-2') {
+            return resolve('thumb already removed')
+          } else if (error) {
+            return reject(error)
+          }
+  
+          return resolve('thumb removed successfully')
         }
       )
     })

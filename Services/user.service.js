@@ -445,16 +445,26 @@ class UserService extends Water {
    * @param {File} params.file
    * @returns {Promise<void>}
    */
-  changeProfileImage({ userId, file, url, oldUrl }) {
-    return removeImage({ url: oldUrl })
-      .then(() => createProfilePicture({ file }))
-      .then(() =>
-        this.userDB.updateDatabaseUser({
-          userId,
-          fieldName: 'profile_picture_url',
-          fieldValue: url
-        })
-      )
+  async changeProfileImage({ userId, file, url, oldUrl }) {
+    try {
+      const response = await removeImage({ url: oldUrl })
+
+      if (Array.isArray(response)) {
+        response.forEach((resp) => logger.info(resp))
+      } else {
+        logger.info(response)
+      }
+
+      await createProfilePicture({ file })
+      return await this.userDB.updateDatabaseUser({
+        userId,
+        fieldName: 'profile_picture_url',
+        fieldValue: url
+      })
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 }
 
