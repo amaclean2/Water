@@ -114,10 +114,7 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<number|boolean>} | the conversation_id if the two users are in a conversation otherwise false
    */
   findConversation({ userIds }) {
-    return this.sendQuery(findConversationStatement, [
-      [userIds],
-      userIds.length
-    ])
+    return this.sendQuery(findConversationStatement, [[userIds], [userIds]])
       .then(([results]) => (results.length ? results[0] : false))
       .catch(failedQuery)
   }
