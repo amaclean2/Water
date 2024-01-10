@@ -19,11 +19,15 @@ class MessagingService extends Water {
     // create new rows in the conversation_interactions table for each user in the conversation
     return this.messageDB.findConversation({ userIds }).then((conversation) => {
       if (conversation) {
+        logger.info(
+          `conversation found: conversation_${conversation.conversation_id}`
+        )
         return {
           conversation_exists: true,
           conversation
         }
       } else {
+        logger.info('creating a new conversation')
         return this.messageDB.saveNewConversation({
           userIds
         })
