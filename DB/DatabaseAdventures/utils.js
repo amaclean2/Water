@@ -32,47 +32,50 @@ const formatAdventureForGeoJSON = (adventure) => {
 
 // all properties below must be in order of the database query
 const getSkiSpecificFields = (adventure) => [
-  adventure.avg_angle || 0,
-  adventure.max_angle || 0,
-  adventure.approach_distance || '',
-  adventure.aspect || 'N',
-  adventure.summit_elevation || 0,
-  adventure.base_elevation || 0,
-  adventure.exposure || 0,
-  adventure.gear || '',
-  adventure.season || '',
-  adventure.trail_path || ''
+  adventure.avg_angle ?? 0,
+  adventure.max_angle ?? 0,
+  adventure.approach_distance ?? '',
+  adventure.aspect ?? 'N',
+  adventure.summit_elevation ?? 0,
+  adventure.base_elevation ?? 0,
+  adventure.exposure ?? 0,
+  adventure.gear ?? '',
+  adventure.season ?? '',
+  adventure.trail_path ?? '',
+  adventure.elevations ?? ''
 ]
 
 // all properties below must be in order of the database query
 const getClimbSpecificFields = (adventure) => [
-  adventure.pitches || 0,
-  adventure.protection || '',
-  adventure.climb_type || '',
-  adventure.light_times || '',
-  adventure.season || '',
-  adventure.approach || '',
-  adventure.first_ascent || ''
+  adventure.pitches ?? 0,
+  adventure.protection ?? '',
+  adventure.climb_type ?? '',
+  adventure.light_times ?? '',
+  adventure.season ?? '',
+  adventure.approach ?? '',
+  adventure.first_ascent ?? ''
 ]
 
 // all properties below must be in order of the database query
 const getHikeSpecificFields = (adventure) => [
-  adventure.summit_elevation || 0,
-  adventure.base_elevation || 0,
-  adventure.distance || 0,
-  adventure.season || '',
-  adventure.trail_path || ''
+  adventure.summit_elevation ?? 0,
+  adventure.base_elevation ?? 0,
+  adventure.distance ?? 0,
+  adventure.season ?? '',
+  adventure.trail_path ?? '',
+  adventure.elevations ?? ''
 ]
 
 // all properties below must be in order of the database query
 const getBikeSpecificFields = (adventure) => [
-  adventure.summit_elevation || 0,
-  adventure.base_elevation || 0,
-  adventure.distance || 0,
-  adventure.season || '',
-  adventure.trail_path || '',
-  adventure.climb || 0,
-  adventure.descent || 0
+  adventure.summit_elevation ?? 0,
+  adventure.base_elevation ?? 0,
+  adventure.distance ?? 0,
+  adventure.season ?? '',
+  adventure.trail_path ?? '',
+  adventure.elevations ?? '',
+  adventure.climb ?? 0,
+  adventure.descent ?? 0
 ]
 
 const getGeneralFields = (adventure) => {
@@ -162,6 +165,10 @@ const getStatementKey = (name, type) => {
       if (type === 'ski') return 'ski_trail_path'
       else if (type === 'hike') return 'hike_trail_path'
       return 'bike_trail_path'
+    case 'elevations':
+      if (type === 'ski') return 'ski_elevation'
+      else if (type === 'hike') return 'hike_elevation'
+      return 'bike_elevation'
     default:
       return name
   }

@@ -45,6 +45,7 @@ CREATE TABLE ski(
     gear VARCHAR(50),
     season VARCHAR(100),
     trail_path TEXT,
+    elevations TEXT,
     PRIMARY KEY(id)
 );
 
@@ -67,6 +68,7 @@ CREATE TABLE hike(
     distance FLOAT,
     season VARCHAR(100),
     trail_path TEXT,
+    elevations TEXT,
     PRIMARY KEY(id)
 );
 
@@ -77,6 +79,7 @@ CREATE TABLE bike(
     distance FLOAT,
     season VARCHAR(100),
     trail_path TEXT,
+    elevations TEXT,
     climb INT,
     descent INT,
     PRIMARY KEY(id)

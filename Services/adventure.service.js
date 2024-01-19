@@ -267,24 +267,60 @@ class AdventureService extends Water {
    * @param {string} params.field.adventure_type | the type of the adventure to update
    * @return {Promise} void
    */
-  editAdventure({ field }) {
-    return this.adventureDB
-      .databaseEditAdventure({ field })
-      .then((adventureKeywords) => {
-        // we need to rebuild the cached adventure list. Since we can do this with data we already have,
-        // it doesn't require another round trip to the database
+  async editAdventure({ field }) {
+    if (field.name === 'elevations') {
+      const elevations = JSON.parse(field.value)
+      const sortedElevations = elevations.sort((a, b) => a - b)
+      const highest = sortedElevations.slice(-1)
+      const lowest = sortedElevations[0]
 
-        if (
-          adventureKeywords !== false &&
-          this.search.adventureKeywordLibrary.includes(field.name)
-        ) {
-          this.adventureCache.del(adventureKeywords.adventure_type)
-          this.search.saveAdventureKeywords({
-            searchableFields: adventureKeywords,
-            id: field.adventure_id
-          })
-        }
+      let lastElevation = elevations[0]
+      const [totalClimb, totalDescent] = elevations.reduce(
+        (totals, elevation) => {
+          let [climb, descent] = totals
+          if (elevation - lastElevation > 0) {
+            climb += elevation - lastElevation
+          } else {
+            descent += (elevation - lastElevation) * -1
+          }
+
+          lastElevation = elevation
+          return [climb, descent]
+        },
+        [0, 0]
+      )
+
+      await this.adventureDB.databaseEditAdventure({
+        field: { ...field, name: 'summit_elevation', value: highest }
       })
+      await this.adventureDB.databaseEditAdventure({
+        field: { ...field, name: 'base_elevation', value: lowest }
+      })
+
+      if (field.adventure_type === 'bike') {
+        await this.adventureDB.databaseEditAdventure({
+          field: { ...field, name: 'climb', value: totalClimb }
+        })
+        await this.adventureDB.databaseEditAdventure({
+          field: { ...field, name: 'descent', value: totalDescent }
+        })
+      }
+    }
+
+    const adventureKeywords = await this.adventureDB.databaseEditAdventure({
+      field
+    })
+
+    if (
+      adventureKeywords !== false &&
+      this.search.adventureKeywordLibrary.includes(field.name)
+    ) {
+      this.adventureCache.del(adventureKeywords.adventure_type)
+      this.search.saveAdventureKeywords({
+        searchableFields: adventureKeywords,
+        id: field.adventure_id
+      })
+    }
   }
 
   /**

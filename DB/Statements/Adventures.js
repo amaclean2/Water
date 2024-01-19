@@ -8,13 +8,13 @@ const createNewHikeAdventureStatement =
 const createNewBikeAdventureStatement =
   'INSERT INTO adventures (adventure_bike_id, adventure_name, adventure_type, bio, coordinates_lat, coordinates_lng, creator_id, nearest_city, public, rating, difficulty) VALUES ?'
 const createNewSkiStatement =
-  'INSERT INTO ski (avg_angle, max_angle, approach_distance, aspect, summit_elevation, base_elevation, exposure, gear, season, trail_path) VALUES ?'
+  'INSERT INTO ski (avg_angle, max_angle, approach_distance, aspect, summit_elevation, base_elevation, exposure, gear, season, trail_path, elevations) VALUES ?'
 const createNewClimbStatement =
   'INSERT INTO climb (pitches, protection, climb_type, light_times, season, approach, first_ascent) VALUES ?'
 const createNewHikeStatement =
-  'INSERT INTO hike (summit_elevation, base_elevation, distance, season, trail_path) VALUES ?'
+  'INSERT INTO hike (summit_elevation, base_elevation, distance, season, trail_path, elevations) VALUES ?'
 const createNewBikeStatement =
-  'INSERT INTO bike (summit_elevation, base_elevation, distance, season, trail_path, climb, descent) VALUES ?'
+  'INSERT INTO bike (summit_elevation, base_elevation, distance, season, trail_path, elevations, climb, descent) VALUES ?'
 
 // get adventure type
 const getAdventureTypeStatement =
@@ -22,11 +22,11 @@ const getAdventureTypeStatement =
 
 // get all adventure details per an adventure id and type
 const selectAdventureByIdGroup = {
-  ski: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, s.avg_angle AS avg_angle, s.trail_path AS path, s.max_angle AS max_angle, s.approach_distance AS approach_distance, s.aspect AS aspect, a.difficulty AS difficulty, s.summit_elevation AS summit_elevation, s.base_elevation AS base_elevation, s.exposure AS exposure, s.gear AS gear, s.season AS season FROM adventures AS a INNER JOIN ski AS s ON a.adventure_ski_id = s.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
+  ski: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, s.avg_angle AS avg_angle, s.trail_path AS path, s.elevations AS elevations, s.max_angle AS max_angle, s.approach_distance AS approach_distance, s.aspect AS aspect, a.difficulty AS difficulty, s.summit_elevation AS summit_elevation, s.base_elevation AS base_elevation, s.exposure AS exposure, s.gear AS gear, s.season AS season FROM adventures AS a INNER JOIN ski AS s ON a.adventure_ski_id = s.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
   climb:
     'SELECT a.id AS id, a.difficulty AS difficulty, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, c.first_ascent AS first_ascent, c.pitches AS pitches, c.protection AS protection, c.approach AS approach, c.climb_type AS climb_type, c.season AS season FROM adventures AS a INNER JOIN climb AS c ON a.adventure_climb_id = c.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
-  hike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, h.trail_path AS path, h.summit_elevation AS summit_elevation, h.base_elevation AS base_elevation, h.distance AS distance, h.season AS season FROM adventures AS a INNER JOIN hike AS h ON a.adventure_hike_id = h.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
-  bike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, b.trail_path AS path, b.summit_elevation AS summit_elevation, b.climb AS climb, b.descent AS descent, b.base_elevation AS base_elevation, b.distance AS distance, b.season AS season FROM adventures AS a INNER JOIN bike AS b ON a.adventure_bike_id = b.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'
+  hike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, h.trail_path AS path, h.elevations AS elevations, h.summit_elevation AS summit_elevation, h.base_elevation AS base_elevation, h.distance AS distance, h.season AS season FROM adventures AS a INNER JOIN hike AS h ON a.adventure_hike_id = h.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?',
+  bike: 'SELECT a.id AS id, a.adventure_name AS adventure_name, a.adventure_type AS adventure_type, a.bio AS bio, a.coordinates_lat AS coordinates_lat, a.coordinates_lng AS coordinates_lng, a.creator_id AS creator_id, CONCAT(u.first_name, " ", u.last_name) AS creator_name, u.email AS creator_email, a.date_created AS date_created, a.nearest_city AS nearest_city, a.public AS public, a.rating AS rating, a.difficulty AS difficulty, b.trail_path AS path, b.elevations AS elevations, b.summit_elevation AS summit_elevation, b.climb AS climb, b.descent AS descent, b.base_elevation AS base_elevation, b.distance AS distance, b.season AS season FROM adventures AS a INNER JOIN bike AS b ON a.adventure_bike_id = b.id INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'
 }
 // get adventures by distance within a type
 const getCloseAdventures = {
@@ -117,6 +117,12 @@ const updateAdventureStatements = {
     'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = ? WHERE a.id = ?',
   bike_trail_path:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = ? WHERE a.id = ?',
+  ski_elevations:
+    'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.elevations = ? WHERE a.id = ?',
+  hike_elevations:
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.elevations = ? WHERE a.id = ?',
+  bike_elevations:
+    'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.elevations = ? WHERE a.id = ?',
   climb:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_Id = b.id SET b.climb = ? WHERE a.id = ?',
   descent:
