@@ -321,6 +321,16 @@ class AdventureService extends Water {
         id: field.adventure_id
       })
     }
+
+    return field.name === 'elevations'
+      ? {
+          field,
+          summit_elevation: hightest,
+          base_elevation: lowest,
+          climb: totalClimb,
+          descent: totalDescent
+        }
+      : field
   }
 
   /**
