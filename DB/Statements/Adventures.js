@@ -112,17 +112,14 @@ const updateAdventureStatements = {
   bike_season:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.season = ? WHERE a.id = ?',
   ski_trail_path:
-    'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.trail_path = ? WHERE a.id = ?',
+    'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.trail_path = ?, s.elevations = ?, s.summit_elevation = ?, s.base_elevation = ? WHERE a.id = ?',
   hike_trail_path:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = ? WHERE a.id = ?',
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = ?, h.elevations = ?, h.summit_elevation = ?, h.base_elevation = ? WHERE a.id = ?',
   bike_trail_path:
-    'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = ? WHERE a.id = ?',
-  ski_elevations:
-    'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.elevations = ? WHERE a.id = ?',
-  hike_elevations:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.elevations = ? WHERE a.id = ?',
-  bike_elevations:
-    'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.elevations = ? WHERE a.id = ?',
+    'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = ?, b.elevations = ?, b.summit_elevation = ?, b.base_elevation = ?, b.climb = ?, b.descent = ? WHERE a.id = ?',
+  remove_ski_trail_path: `UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.trail_path = '[], s.elevations = '[]' WHERE a.id = ?`,
+  remove_hike_trail_path: `UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = '[]', h.elevations = '[]' WHERE a.id = ?`,
+  remove_bike_trail_path: `UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = '[]', b.elevations = '[]' WHERE a.id = ?`,
   climb:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_Id = b.id SET b.climb = ? WHERE a.id = ?',
   descent:

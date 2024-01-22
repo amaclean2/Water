@@ -1,4 +1,5 @@
 const Water = require('.')
+const logger = require('../Config/logger')
 
 const stopWords = [
   'a',
@@ -58,11 +59,10 @@ class SearchService extends Water {
   }
 
   /**
-   *
    * @param {Object} params
    * @param {Object} params.searchableFields | all the user fields to be searched
    * @param {number} params.userId
-   * @returns {Promise} void
+   * @returns {Promise<void>}
    */
   saveUserKeywords({ searchableFields, userId }) {
     const searchString = this.userKeywordLibrary
@@ -94,17 +94,33 @@ class SearchService extends Water {
     return this.userDB.searchDatabaseForUserString({ keyword: parsedString })
   }
 
-  saveAdventureKeywords({ searchableFields, id }) {
-    const searchString = this.adventureKeywordLibrary
-      .map((key) => {
-        const text = searchableFields[key]
-        return text ? this.parseString(text) : ''
+  /**
+   * @param {Object} params
+   * @param {Object} params.searchableFields | all the adventure fields to be searched
+   * @param {number} params.adventureId
+   * @returns {Promise<void>}
+   */
+  async saveAdventureKeywords({ searchableFields, adventureId }) {
+    try {
+      const searchString = this.adventureKeywordLibrary
+        .map((key) => {
+          const text = searchableFields[key]
+          return text ? this.parseString(text) : ''
+        })
+        .join('')
+
+      logger.info(`saving adventure keywords on ${adventureId}`)
+
+      await this.adventureDB.updateSearchAdventureKeywords({
+        keyword: searchString,
+        adventureId
       })
-      .join('')
-    return this.adventureDB.updateSearchAdventureKeywords({
-      keyword: searchString,
-      adventureId: id
-    })
+
+      logger.info(`finished saving adventure keywords on ${adventureId}`)
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   handleAdventureSearch({ search }) {

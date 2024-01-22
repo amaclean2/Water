@@ -3,6 +3,7 @@ const SearchService = require('./search.service')
 const { Cache } = require('memory-cache')
 const { updateAdventureCache } = require('./utils/caching')
 const csv = require('csvtojson')
+const logger = require('../Config/logger')
 
 const CACHE_TIMEOUT = 1000 * 360
 
@@ -258,6 +259,74 @@ class AdventureService extends Water {
       })
   }
 
+  convertMetersToFeet(meters) {
+    return meters * 3.28084
+  }
+
+  async databaseEditPath({ field }) {
+    try {
+      const elevations = JSON.parse(field.elevations)
+      const sortedElevations = elevations
+        .map((elev) => elev[0])
+        .sort((a, b) => a - b)
+      const highest =
+        Math.round(
+          this.convertMetersToFeet(sortedElevations.slice(-1)[0]) * 1000
+        ) / 1000
+      const lowest =
+        Math.round(this.convertMetersToFeet(sortedElevations[0]) * 1000) / 1000
+
+      let lastElevation = elevations[0][0]
+      let totals = [0, 0]
+      elevations.forEach((elev) => {
+        if (elev[0] - lastElevation > 0) {
+          totals[0] = elev[0] - lastElevation + totals[0]
+        } else {
+          totals[1] = elev[0] - lastElevation + totals[1]
+        }
+
+        lastElevation = elev[0]
+      })
+
+      logger.info(
+        `database path edit: ${totals}, highest: ${highest}, lowest: ${lowest}`
+      )
+
+      if (field.adventure_type === 'bike') {
+        await this.adventureDB.databaseEditAdventurePaths({
+          field: {
+            ...field,
+            summit_elevation: highest,
+            base_elevation: lowest,
+            climb: this.convertMetersToFeet(totals[0]),
+            descent: this.convertMetersToFeet(-1 * totals[1])
+          }
+        })
+      } else {
+        await this.adventureDB.databaseEditAdventurePaths({
+          field: {
+            ...field,
+            summit_elevation: highest,
+            base_elevation: lowest
+          }
+        })
+      }
+
+      logger.info(`database update finished on ${field.adventure_id}`)
+
+      return {
+        field,
+        summit_elevation: highest,
+        base_elevation: lowest,
+        climb: totals[0],
+        descent: totals[1]
+      }
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
+  }
+
   /**
    * @param {Object} params
    * @param {Object} params.field | the field to update
@@ -265,72 +334,46 @@ class AdventureService extends Water {
    * @param {string} params.field.value | the value of the field to update
    * @param {number} params.field.adventure_id | the id of the adventure to update
    * @param {string} params.field.adventure_type | the type of the adventure to update
-   * @return {Promise} void
+   * @param {string} params.field.path | if a path field is being updated
+   * @param {string} params.field.elevations | if a path field is being updated elevations should also be provided
+   * @return {Promise<void>}
    */
   async editAdventure({ field }) {
-    if (field.name === 'elevations') {
-      const elevations = JSON.parse(field.value)
-      const sortedElevations = elevations.sort((a, b) => a - b)
-      const highest = sortedElevations.slice(-1)
-      const lowest = sortedElevations[0]
+    try {
+      if (field.path) {
+        if (field.path === '[]') {
+          await this.adventureDB.databaseEditAdventurePaths({
+            field: { ...field, action: 'remove' }
+          })
 
-      let lastElevation = elevations[0]
-      const [totalClimb, totalDescent] = elevations.reduce(
-        (totals, elevation) => {
-          let [climb, descent] = totals
-          if (elevation - lastElevation > 0) {
-            climb += elevation - lastElevation
-          } else {
-            descent += (elevation - lastElevation) * -1
-          }
-
-          lastElevation = elevation
-          return [climb, descent]
-        },
-        [0, 0]
-      )
-
-      await this.adventureDB.databaseEditAdventure({
-        field: { ...field, name: 'summit_elevation', value: highest }
-      })
-      await this.adventureDB.databaseEditAdventure({
-        field: { ...field, name: 'base_elevation', value: lowest }
-      })
-
-      if (field.adventure_type === 'bike') {
-        await this.adventureDB.databaseEditAdventure({
-          field: { ...field, name: 'climb', value: totalClimb }
-        })
-        await this.adventureDB.databaseEditAdventure({
-          field: { ...field, name: 'descent', value: totalDescent }
-        })
-      }
-    }
-
-    const adventureKeywords = await this.adventureDB.databaseEditAdventure({
-      field
-    })
-
-    if (
-      adventureKeywords !== false &&
-      this.search.adventureKeywordLibrary.includes(field.name)
-    ) {
-      this.adventureCache.del(adventureKeywords.adventure_type)
-      this.search.saveAdventureKeywords({
-        searchableFields: adventureKeywords,
-        id: field.adventure_id
-      })
-    }
-
-    return field.name === 'elevations'
-      ? {
-          field,
-          summit_elevation: hightest,
-          base_elevation: lowest,
-          climb: totalClimb,
-          descent: totalDescent
+          return field
         }
-      : field
+
+        return await this.databaseEditPath({ field })
+      } else {
+        const adventureKeywords = await this.adventureDB.databaseEditAdventure({
+          field
+        })
+
+        if (
+          adventureKeywords !== false &&
+          this.search.adventureKeywordLibrary.includes(field.name)
+        ) {
+          this.adventureCache.del(adventureKeywords.adventure_type)
+          await this.search.saveAdventureKeywords({
+            searchableFields: adventureKeywords,
+            adventureId: field.adventure_id
+          })
+        }
+
+        logger.info(`database update finished on ${field.adventure_id}`)
+
+        return field
+      }
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**

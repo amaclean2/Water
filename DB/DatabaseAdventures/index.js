@@ -140,6 +140,9 @@ class AdventureDataLayer extends DataLayer {
         if (['ski', 'hike', 'bike'].includes(adventureType)) {
           if (selectedAdventure?.path?.length !== 0) {
             selectedAdventure.path = JSON.parse(selectedAdventure.path)
+            selectedAdventure.elevations = JSON.parse(
+              selectedAdventure.elevations
+            )
             selectedAdventure.cameraBounds = calculateCameraBounds(
               selectedAdventure.path
             )
@@ -206,34 +209,121 @@ class AdventureDataLayer extends DataLayer {
   /**
    * @param {Object} params
    * @param {Object} params.field
+   * @param {number} params.field.adventure_id
+   * @param {string} params.field.adventure_type
+   * @param {string} params.field.path
+   * @param {string} params.field.elevations
+   * @param {string} params.field.base_elevation
+   * @param {string} params.field.summit_elevation
+   * @param {string} params.field.climb
+   * @param {string} params.field.descent
+   * @param {('remove'|'add')} params.field.action
+   * @returns {Promise<false>}
+   */
+  async databaseEditAdventurePaths({ field }) {
+    try {
+      logger.info(`editing trail_paths for ${field.adventure_id}`)
+      if (field.action === 'remove') {
+        const type =
+          field.adventure_type === 'ski'
+            ? 'remove_ski_trail_path'
+            : field.adventure_type === 'hike'
+            ? 'remove_hike_trail_path'
+            : 'remove_bike_trail_path'
+        await this.sendQuery(updateAdventureStatements[type], [
+          field.adventure_id
+        ])
+      }
+
+      if (field.adventure_type === 'bike') {
+        await this.sendQuery(updateAdventureStatements['bike_trail_path'], [
+          field.path,
+          field.elevations,
+          field.summit_elevation,
+          field.base_elevation,
+          field.climb,
+          field.descent,
+          field.adventure_id
+        ])
+      } else if (field.adventure_type === 'ski') {
+        await this.sendQuery(updateAdventureStatements['ski_trail_path'], [
+          field.path,
+          field.elevations,
+          field.summit_elevation,
+          field.base_elevation,
+          field.adventure_id
+        ])
+      } else if (field.adventure_type === 'hike') {
+        await this.sendQuery(updateAdventureStatements['hike_trail_path'], [
+          field.path,
+          field.elevations,
+          field.summit_elevation,
+          field.base_elevation,
+          field.adventure_id
+        ])
+      }
+      logger.info(`finished editing trail_paths for ${field.adventure_id}`)
+
+      return false
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {Object} params.field
    * @param {string} params.field.name
    * @param {string} params.field.value
    * @param {number} params.field.adventure_id
    * @param {string} params.field.adventure_type
    * @returns {Promise<AdventureObject>} the updated adventure
    */
-  databaseEditAdventure({ field }) {
+  async databaseEditAdventure({ field }) {
     // some of the adventure fields are in the adventures table, some are in the specific-type table
     // if this field is in the general table then we just need to update that one.
     // Editing requires another read because we need to update the searchable statement table as well
-    if (adventureTemplates.general.includes(field.name)) {
-      return this.sendQuery(updateAdventureStatements[field.name], [
-        field.value,
-        field.adventure_id
-      ])
-        .then(() => this.sendQuery(getKeywordsStatement, [field.adventure_id]))
-        .then(([[result]]) => result)
-        .catch(failedUpdate)
-    } else {
-      // if we are updating one of the specific adventure fields then we just do that
-      return this.sendQuery(
-        updateAdventureStatements[
-          getStatementKey(field.name, field.adventure_type)
-        ],
-        [field.value, field.adventure_id]
-      )
-        .then(() => false)
-        .catch(failedUpdate)
+    try {
+      if (field.name === 'paths') {
+        throw 'paths have their own edit statement'
+      }
+
+      if (adventureTemplates.general.includes(field.name)) {
+        logger.info(
+          `edit new general query on ${field.adventure_id}, ${field.name}`
+        )
+        await this.sendQuery(updateAdventureStatements[field.name], [
+          field.value,
+          field.adventure_id
+        ])
+        const [[statements]] = await this.sendQuery(getKeywordsStatement, [
+          field.adventure_id
+        ])
+
+        logger.info(
+          `finished editing query on ${field.adventure_id}, ${field.name}`
+        )
+
+        return statements
+      } else {
+        logger.info(
+          `edit new specific query on ${field.adventure_id}, ${field.name}`
+        )
+        // if we are updating one of the specific adventure fields then we just do that
+        await this.sendQuery(
+          updateAdventureStatements[
+            getStatementKey(field.name, field.adventure_type)
+          ],
+          [field.value, field.adventure_id]
+        )
+        logger.info(
+          `finished editing query on ${field.adventure_id}, ${field.name}`
+        )
+        return false
+      }
+    } catch (error) {
+      throw failedUpdate(error)
     }
   }
 
@@ -241,7 +331,7 @@ class AdventureDataLayer extends DataLayer {
    * @param {Object} params
    * @param {string} params.keyword
    * @param {number} params.adventureId
-   * @returns {Promise} void
+   * @returns {Promise<void>}
    */
   updateSearchAdventureKeywords({ keyword, adventureId }) {
     return this.sendQuery(addKeywordStatement, [keyword, adventureId]).catch(
