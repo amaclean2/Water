@@ -86,37 +86,53 @@ class MessagingService extends Water {
    * @param {string} params.dataReference
    * @returns {Promise<MessageObject>} | an object containing all the relevant data about the message
    */
-  sendMessage({ conversationId, senderId, messageBody, dataReference }) {
+  async sendMessage({ conversationId, senderId, messageBody, dataReference }) {
     // add a new message to the messages table
-    let responseBody
-    return this.messageDB
-      .saveNewMessage({
+    try {
+      await this.messageDB.saveNewMessage({
         conversationId,
         senderId,
         messageBody,
         dataReference
       })
-      .then(() => {
-        responseBody = {
-          message_body: messageBody,
-          user_id: senderId,
-          conversation_id: conversationId,
-          data_reference: dataReference ?? null
-        }
+
+      await this.messageDB.updateUnread({
+        userId: senderId,
+        conversationId
       })
-      .then(() =>
-        this.messageDB.updateUnread({
-          userId: senderId,
-          conversationId
-        })
-      )
-      .then(() =>
-        this.messageDB.setLastMessage({
-          lastMessage: messageBody,
-          conversationId
-        })
-      )
-      .then(() => responseBody)
+
+      await this.messageDB.setLastMessage({
+        lastMessage: messageBody,
+        conversationId
+      })
+
+      return {
+        message_body: messageBody,
+        user_id: senderId,
+        conversation_id: conversationId,
+        data_reference: dataReference ?? null
+      }
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @param {string} params.token
+   * @returns {Promise<string>} | a success message
+   */
+  async saveDeviceToken({ userId, token }) {
+    try {
+      const success = await this.messageDB.addTokenDb({ userId, token })
+      logger.info(success)
+      return success
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**

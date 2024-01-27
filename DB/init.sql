@@ -49,6 +49,13 @@ CREATE TABLE ski(
     PRIMARY KEY(id)
 );
 
+CREATE TABLE device_tokens(
+    token VARCHAR(100),
+    user_id INT,
+    PRIMARY KEY(token),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE climb(
     id INT AUTO_INCREMENT,
     first_ascent VARCHAR(255),

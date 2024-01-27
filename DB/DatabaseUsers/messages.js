@@ -9,7 +9,8 @@ const {
   getConversationMessagesStatement,
   clearUnreadStatement,
   findConversationStatement,
-  setLastMessageStatement
+  setLastMessageStatement,
+  insertDeviceTokenStatement
 } = require('../Statements/Messages')
 const { failedInsertion, failedQuery, failedUpdate } = require('../utils')
 
@@ -177,6 +178,18 @@ class MessageDataLayer extends DataLayer {
     return this.sendQuery(getConversationMessagesStatement, [conversationId])
       .then(([results]) => results)
       .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @param {string} param.token
+   * @returns
+   */
+  async addTokenDb({ userId, token }) {
+    await this.sendQuery(insertDeviceTokenStatement, [token, userId])
+
+    return 'pair added succesfully'
   }
 }
 

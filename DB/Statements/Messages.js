@@ -29,6 +29,10 @@ WHERE m.conversation_id = ?
 ORDER BY m.id DESC
 `
 const deleteConversationStatement = `DELETE FROM conversations WHERE id = ?`
+const insertDeviceTokenStatement =
+  'INSERT INTO device_tokens (token, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token), user_id = VALUES(user_id)'
+const selectDeviceTokenStatement =
+  'SELECT dt.token FROM device_tokens AS dt INNER JOIN conversation_interactions AS ci ON dt.user_id = ci.user_id WHERE ci.conversation_id = ?'
 
 module.exports = {
   createNewMessageStatement,
@@ -41,5 +45,7 @@ module.exports = {
   clearUnreadStatement,
   getConversationMessagesStatement,
   findConversationStatement,
-  deleteConversationStatement
+  deleteConversationStatement,
+  insertDeviceTokenStatement,
+  selectDeviceTokenStatement
 }
