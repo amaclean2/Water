@@ -84,7 +84,7 @@ class MessagingService extends Water {
    * @param {number} params.senderId
    * @param {string} params.messageBody
    * @param {string} params.dataReference
-   * @returns {Promise<MessageObject>} | an object containing all the relevant data about the message
+   * @returns {Promise<{message_body: string, user_id: number, conversation_id: number, data_reference: string, applied_tokens: Array<string>}>} | an object containing all the relevant data about the message
    */
   async sendMessage({ conversationId, senderId, messageBody, dataReference }) {
     // add a new message to the messages table
