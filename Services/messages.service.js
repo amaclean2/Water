@@ -89,6 +89,7 @@ class MessagingService extends Water {
   async sendMessage({ conversationId, senderId, messageBody, dataReference }) {
     // add a new message to the messages table
     try {
+      // save the message to the database
       await this.messageDB.saveNewMessage({
         conversationId,
         senderId,
@@ -96,21 +97,30 @@ class MessagingService extends Water {
         dataReference
       })
 
+      // set the unread notification status for the sending user
       await this.messageDB.updateUnread({
         userId: senderId,
         conversationId
       })
 
+      // set the last message for the conversation
       await this.messageDB.setLastMessage({
         lastMessage: messageBody,
         conversationId
       })
 
+      // get all connected device tokens in the conversation
+      const tokens = await this.messageDB.getDeviceTokensPerConversation({
+        conversationId
+      })
+      const formattedTokens = tokens.map(({ token }) => token)
+
       return {
         message_body: messageBody,
         user_id: senderId,
         conversation_id: conversationId,
-        data_reference: dataReference ?? null
+        data_reference: dataReference ?? null,
+        applied_tokens: formattedTokens
       }
     } catch (error) {
       logger.error(error)
@@ -126,6 +136,10 @@ class MessagingService extends Water {
    */
   async saveDeviceToken({ userId, token }) {
     try {
+      if (!userId || !token) {
+        throw 'userId and token are required'
+      }
+
       const success = await this.messageDB.addTokenDb({ userId, token })
       logger.info(success)
       return success
