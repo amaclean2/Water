@@ -117,7 +117,9 @@ class MessagingService extends Water {
       const tokens = await this.messageDB.getDeviceTokensPerConversation({
         conversationId
       })
-      const formattedTokens = tokens.map(({ token }) => token)
+      const formattedTokens = tokens
+        .filter(({ user_id }) => user_id !== senderId)
+        .map(({ token }) => token)
 
       return {
         message_body: messageBody,

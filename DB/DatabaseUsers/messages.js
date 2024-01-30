@@ -191,7 +191,7 @@ class MessageDataLayer extends DataLayer {
     try {
       await this.sendQuery(insertDeviceTokenStatement, [token, userId])
 
-      return 'pair added succesfully'
+      return `token added or found succesfully for ${userId}`
     } catch (error) {
       throw failedInsertion(error)
     }
