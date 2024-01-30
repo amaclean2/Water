@@ -89,6 +89,10 @@ class MessagingService extends Water {
   async sendMessage({ conversationId, senderId, messageBody, dataReference }) {
     // add a new message to the messages table
     try {
+      if (!conversationId || !senderId || !messageBody) {
+        throw 'conversationId, senderId and messageBody are required fields'
+      }
+
       // save the message to the database
       await this.messageDB.saveNewMessage({
         conversationId,
