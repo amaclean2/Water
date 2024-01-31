@@ -6,7 +6,9 @@ const {
   createNewHikeStatement,
   createNewHikeAdventureStatement,
   createNewBikeStatement,
-  createNewBikeAdventureStatement
+  createNewBikeAdventureStatement,
+  createNewSkiApproachStatement,
+  createNewApproachStatement
 } = require('../Statements')
 
 const formatAdventureForGeoJSON = (adventure) => {
@@ -34,15 +36,14 @@ const formatAdventureForGeoJSON = (adventure) => {
 const getSkiSpecificFields = (adventure) => [
   adventure.avg_angle ?? 0,
   adventure.max_angle ?? 0,
-  adventure.approach_distance ?? '',
   adventure.aspect ?? 'N',
   adventure.summit_elevation ?? 0,
   adventure.base_elevation ?? 0,
   adventure.exposure ?? 0,
-  adventure.gear ?? '',
   adventure.season ?? '',
   adventure.trail_path ?? '',
-  adventure.elevations ?? ''
+  adventure.elevations ?? '',
+  adventure.ski_approach_id ?? 0
 ]
 
 // all properties below must be in order of the database query
@@ -78,12 +79,22 @@ const getBikeSpecificFields = (adventure) => [
   adventure.descent ?? 0
 ]
 
+const getSkiApproachSpecificFields = (adventure) => [
+  adventure.distance ?? 0,
+  adventure.summit_elevation ?? 0,
+  adventure.base_elevation ?? 0,
+  adventure.gear ?? '',
+  adventure.trail_path ?? '',
+  adventure.elevations ?? ''
+]
+
 const getGeneralFields = (adventure) => {
   return [
     (adventure.adventure_type === 'ski' && adventure.adventure_ski_id) ||
       (adventure.adventure_type === 'climb' && adventure.adventure_climb_id) ||
       (adventure.adventure_type === 'hike' && adventure.adventure_hike_id) ||
-      (adventure.adventure_type === 'bike' && adventure.adventure_bike_id),
+      (adventure.adventure_type === 'bike' && adventure.adventure_bike_id) ||
+      (adventure.adventure_type === 'skiApproach' && adventure.ski_approach_id),
     adventure.adventure_name,
     adventure.adventure_type,
     adventure.bio || '',
@@ -97,59 +108,28 @@ const getGeneralFields = (adventure) => {
   ]
 }
 
-const adventureTemplates = {
-  general: [
-    'adventure_name',
-    'bio',
-    'coordinates_lat',
-    'coordinates_lng',
-    'nearest_city',
-    'rating',
-    'public',
-    'difficulty'
-  ],
-  ski: [
-    'approach_distance',
-    'season',
-    'avg_angle',
-    'max_angle',
-    'summit_elevation',
-    'gear',
-    'base_elevation'
-  ],
-  climb: [
-    'climb_type',
-    'protection',
-    'pitches',
-    'light_times',
-    'season',
-    'approach',
-    'first_ascent'
-  ],
-  hike: ['season', 'length', 'base_elevaiton', 'summit_elevation'],
-  bike: [
-    'season',
-    'length',
-    'base_elevation',
-    'summit_elevation',
-    'climb',
-    'descent'
-  ]
-}
+const adventureTemplate = [
+  'adventure_name',
+  'bio',
+  'coordinates_lat',
+  'coordinates_lng',
+  'nearest_city',
+  'rating',
+  'public',
+  'difficulty'
+]
 
 const getStatementKey = (name, type) => {
   switch (name) {
-    case 'difficulty':
-      if (type === 'ski') return 'ski_difficulty'
-      else if (type === 'bike') return 'bike_difficulty'
-      else return 'hike_difficulty'
     case 'summit_elevation':
       if (type === 'ski') return 'ski_summit_elevation'
       else if (type === 'bike') return 'bike_summit_elevation'
+      else if (type === 'skiApproach') return 'ski_approach_summit_elevation'
       else return 'hike_summit_elevation'
     case 'base_elevation':
       if (type === 'ski') return 'ski_base_elevation'
       else if (type === 'bike') return 'bike_base_elevaiton'
+      else if (type === 'skiApproach') return 'ski_approach_base_elevation'
       else return 'hike_base_elevation'
     case 'season':
       if (type === 'ski') return 'ski_season'
@@ -160,15 +140,13 @@ const getStatementKey = (name, type) => {
       return 'climb_approach'
     case 'distance':
       if (type === 'bike') return 'bike_distance'
+      else if (type === 'skiApproach') return 'approach_distance'
       return 'hike_distance'
     case 'trail_path':
       if (type === 'ski') return 'ski_trail_path'
       else if (type === 'hike') return 'hike_trail_path'
+      else if (type === 'skiApproach') return 'ski_approach_trail_path'
       return 'bike_trail_path'
-    case 'elevations':
-      if (type === 'ski') return 'ski_elevation'
-      else if (type === 'hike') return 'hike_elevation'
-      return 'bike_elevation'
     default:
       return name
   }
@@ -206,6 +184,14 @@ const getPropsToImport = (adventure) => {
         createNewBikeAdventureStatement
       adventureProperties.specificFields = getBikeSpecificFields(adventure)
       adventureProperties.specificIdType = 'adventure_bike_id'
+    case 'ski_approach':
+      adventureProperties.createNewSpecificStatement =
+        createNewApproachStatement
+      adventureProperties.createNewGeneralStatement =
+        createNewSkiApproachStatement
+      adventureProperties.specificFields =
+        getSkiApproachSpecificFields(adventure)
+      adventureProperties.specificIdType = 'ski_approach_id'
   }
 
   return adventureProperties
@@ -225,24 +211,21 @@ const parseAdventures = (adventures) => {
   parsedAdventures.bike = adventures.filter(
     ({ adventure_type }) => adventure_type === 'bike'
   )
+  parsedAdventures.skiApproach = adventures.filter(
+    ({ adventure_type }) => adventure_type === 'skiApproach'
+  )
 
   return parsedAdventures
 }
 
 const createSpecificProperties = (parsedAdventures) => {
   const specificProperties = {}
-  specificProperties.ski = parsedAdventures.ski.map((adventure) =>
-    getSkiSpecificFields(adventure)
-  )
-  specificProperties.climb = parsedAdventures.climb.map((adventure) =>
-    getClimbSpecificFields(adventure)
-  )
-  specificProperties.hike = parsedAdventures.hike.map((adventure) =>
-    getHikeSpecificFields(adventure)
-  )
-
-  specificProperties.bike = parsedAdventures.bike.map((adventure) =>
-    getBikeSpecificFields(adventure)
+  specificProperties.ski = parsedAdventures.ski.map(getSkiSpecificFields)
+  specificProperties.climb = parsedAdventures.climb.map(getClimbSpecificFields)
+  specificProperties.hike = parsedAdventures.hike.map(getHikeSpecificFields)
+  specificProperties.bike = parsedAdventures.bike.map(getBikeSpecificFields)
+  specificProperties.skiApproach = parsedAdventures.skiApproach.map(
+    getSkiApproachSpecificFields
   )
 
   return specificProperties
@@ -259,5 +242,5 @@ module.exports = {
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
-  adventureTemplates
+  adventureTemplate
 }

@@ -19,12 +19,16 @@ const {
   getAdventurePicturesStatement,
   createAdventurePictureStatement,
   deleteBikeStatement,
-  getCloseAdventures
+  getCloseAdventures,
+  createNewBikeStatement,
+  createNewBikeAdventureStatement,
+  createNewApproachStatement,
+  createNewSkiApproachStatement
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
   getGeneralFields,
-  adventureTemplates,
+  adventureTemplate,
   getStatementKey,
   getPropsToImport,
   parseAdventures,
@@ -82,17 +86,21 @@ class AdventureDataLayer extends DataLayer {
     const createNewSpecificStatements = {
       ski: createNewSkiStatement,
       climb: createNewClimbStatement,
-      hike: createNewHikeStatement
+      hike: createNewHikeStatement,
+      bike: createNewBikeStatement,
+      skiApproach: createNewApproachStatement
     }
 
     const createNewGeneralStatements = {
       ski: createNewSkiAdventureStatement,
       climb: createNewClimbAdventureStatement,
-      hike: createNewHikeAdventureStatement
+      hike: createNewHikeAdventureStatement,
+      bike: createNewBikeAdventureStatement,
+      skiApproach: createNewSkiApproachStatement
     }
 
     return Promise.all(
-      ['ski', 'climb', 'hike', 'bike'].map((type) => {
+      ['ski', 'climb', 'hike', 'bike', 'skiApproach'].map((type) => {
         if (!parsedAdventures[type].length) {
           return []
         }
@@ -137,7 +145,7 @@ class AdventureDataLayer extends DataLayer {
         }
 
         // convert the stringified path back to an object
-        if (['ski', 'hike', 'bike'].includes(adventureType)) {
+        if (['ski', 'hike', 'bike', 'skiApproach'].includes(adventureType)) {
           if (selectedAdventure?.path?.length !== 0) {
             selectedAdventure.path = JSON.parse(selectedAdventure.path)
             selectedAdventure.elevations = JSON.parse(
@@ -148,11 +156,6 @@ class AdventureDataLayer extends DataLayer {
             )
           } else if (!selectedAdventure?.path) {
             selectedAdventure.path = []
-          }
-
-          if (selectedAdventure.approach_distance !== undefined) {
-            selectedAdventure.distance = selectedAdventure.approach_distance
-            delete selectedAdventure.approach_distance
           }
         }
 
@@ -176,7 +179,26 @@ class AdventureDataLayer extends DataLayer {
    */
   getClosestAdventures({ adventureType, coordinates, count }) {
     logger.info({ centerCoordinatesOfAdventures: coordinates })
-    return this.sendQuery(getCloseAdventures[adventureType], [
+    let adventureId
+    switch (adventureType) {
+      case 'ski':
+        adventureId = 'adventure_ski_id'
+        break
+      case 'climb':
+        adventureId = 'adventure_climb_id'
+        break
+      case 'hike':
+        adventureId = 'adventure_hike_id'
+        break
+      case 'bike':
+        adventureId = 'adventure_bike_id'
+        break
+      case 'skiApproach':
+        adventureId = 'ski_approach_id'
+    }
+
+    return this.sendQuery(getCloseAdventures, [
+      adventureId,
       coordinates.lat,
       coordinates.lng,
       count
@@ -289,7 +311,7 @@ class AdventureDataLayer extends DataLayer {
         throw 'paths have their own edit statement'
       }
 
-      if (adventureTemplates.general.includes(field.name)) {
+      if (adventureTemplate.includes(field.name)) {
         logger.info(
           `edit new general query on ${field.adventure_id}, ${field.name}`
         )
