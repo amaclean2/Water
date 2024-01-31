@@ -157,20 +157,32 @@ class AdventureService extends Water {
    * @param {string} params.adventureType | the adventure type to get
    * @returns {Promise<AdventureGeoJsonObject>} a list of adventures formatted as geoJson
    */
-  getAdventureList({ adventureType }) {
-    // if there is already a cached adventure list, just return that
-    const cachedResults = this.adventureCache.get(adventureType)
+  async getAdventureList({ adventureType }) {
+    try {
+      // if there is already a cached adventure list, just return that
+      const cachedResults = this.adventureCache.get(adventureType)
 
-    if (cachedResults) {
-      return cachedResults
-    }
+      if (cachedResults) {
+        return {
+          [adventureType]: cachedResults
+        }
+      }
 
-    return this.adventureDB
-      .databaseGetTypedAdventures({ adventureType })
-      .then((adventures) => {
-        this.adventureCache.put(adventureType, adventures, CACHE_TIMEOUT)
-        return adventures
+      const adventures = await this.adventureDB.databaseGetTypedAdventures({
+        adventureType
       })
+
+      this.adventureCache.put(
+        adventureType,
+        adventures[adventureType],
+        CACHE_TIMEOUT
+      )
+
+      return adventures
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**

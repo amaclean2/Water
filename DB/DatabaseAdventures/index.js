@@ -212,20 +212,45 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject[]>}
    */
-  databaseGetTypedAdventures({ adventureType }) {
-    // fetch all the adventures that pertain to that type from the database
-    return this.sendQuery(selectAdventuresStatement, [adventureType])
-      .then(([results]) => {
-        return results.map((result) => formatAdventureForGeoJSON(result))
-      })
-      .then((formattedResults) => {
-        // this is formatted as geoJSON because the mapbox api needs to read it
+  async databaseGetTypedAdventures({ adventureType }) {
+    try {
+      // fetch all the adventures that pertain to that type from the database
+      const [results] = await this.sendQuery(selectAdventuresStatement, [
+        adventureType
+      ])
+
+      const formattedResults = results.map(formatAdventureForGeoJSON)
+
+      if (adventureType === 'ski') {
+        const approachResultList = await this.sendQuery(
+          selectAdventuresStatement,
+          ['skiApproach']
+        )
+
+        const skiApproachResults = approachResultList[0]
+
         return {
-          type: 'FeatureCollection',
-          features: formattedResults
+          ski: {
+            type: 'FeatureCollection',
+            features: formattedResults
+          },
+          skiApproach: {
+            type: 'FeatureCollection',
+            features: skiApproachResults.map(formatAdventureForGeoJSON)
+          }
         }
-      })
-      .catch(failedQuery)
+      } else {
+        return {
+          [adventureType]: {
+            type: 'FeatureCollection',
+            features: formattedResults
+          }
+        }
+      }
+    } catch (error) {
+      logger.error(error)
+      throw failedQuery(error)
+    }
   }
 
   /**
