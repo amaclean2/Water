@@ -53,28 +53,40 @@ class AdventureDataLayer extends DataLayer {
    * @param {Object} adventure | the adventure object to be added
    * @returns {Promise} the new adventure id
    */
-  addAdventure(adventure) {
-    const adventureProperties = getPropsToImport(adventure)
+  async addAdventure(adventure) {
+    try {
+      const adventureProperties = getPropsToImport(adventure)
 
-    // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike, bike)
-    // and the general adventures table. This statement updates the specific one and gets the specific id
-    return this.sendQuery(adventureProperties.createNewSpecificStatement, [
-      [adventureProperties.specificFields]
-    ])
-      .then(([{ insertId: specificId }]) =>
-        getGeneralFields({
-          ...adventure,
-          [adventureProperties.specificIdType]: specificId
-        })
+      logger.info(`adventure properties built for new adventure`)
+
+      // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike, bike)
+      // and the general adventures table. This statement updates the specific one and gets the specific id
+      const [{ insertId: specificId }] = await this.sendQuery(
+        adventureProperties.createNewSpecificStatement,
+        [[adventureProperties.specificFields]]
       )
-      .then((fields) => {
-        // this is the last query to update the general adventures table and it returns the id of the adventure
-        return this.sendQuery(adventureProperties.createNewGeneralStatement, [
-          [fields]
-        ])
+
+      logger.info(`specific information saved for new adventure`)
+
+      const fields = await getGeneralFields({
+        ...adventure,
+        [adventureProperties.specificIdType]: specificId
       })
-      .then(([{ insertId }]) => insertId)
-      .catch(failedInsertion)
+
+      logger.info(`fields obtained for general information`)
+
+      const [{ insertId }] = await this.sendQuery(
+        adventureProperties.createNewGeneralStatement,
+        [[fields]]
+      )
+
+      logger.info(`general information saved for adventure ${insertId}`)
+
+      return insertId
+    } catch (error) {
+      logger.error(error)
+      throw failedInsertion(error)
+    }
   }
 
   async bulkAddAdventures({ adventures }) {

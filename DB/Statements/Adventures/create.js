@@ -18,7 +18,7 @@ const createNewHikeStatement =
 const createNewBikeStatement =
   'INSERT INTO bike (summit_elevation, base_elevation, distance, season, trail_path, elevations, climb, descent) VALUES ?'
 const createNewApproachStatement =
-  'INSERT INTO ski_approach (distance, aspect, summit_elevation, base_elevation, gear, trail_path, elevations) VALUES ?'
+  'INSERT INTO ski_approach (distance, summit_elevation, base_elevation, gear, trail_path, elevations) VALUES ?'
 const addKeywordStatement =
   'REPLACE INTO searchable_adventures (searchable_text, adventure_id) VALUES (?, ?)'
 
