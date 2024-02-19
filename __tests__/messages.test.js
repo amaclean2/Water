@@ -159,6 +159,7 @@ describe('message service layer testing', () => {
 
     expect(messagesResponse.length).toBe(2)
   })
+
   test('creating a new conversation returns the id of the already made conversation if one exists between those users', async () => {
     let newConversationResponse =
       await serviceHandler.messagingService.createConversation({

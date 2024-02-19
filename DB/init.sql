@@ -85,7 +85,7 @@ CREATE TABLE bike(
 );
 
 CREATE TABLE ski_approach(
-    id INT AUTO_INCREMENT
+    id INT AUTO_INCREMENT,
     summit_elevation INT,
     base_elevation INT,
     gear VARCHAR(50),
