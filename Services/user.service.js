@@ -45,7 +45,7 @@ class UserService extends Water {
     }
 
     let userObject
-    let derivedId = id ? id : null
+    let derivedId = id ?? null
 
     if (id) {
       userObject = await this.userDB.getUserById({ userId: id })
@@ -112,6 +112,13 @@ class UserService extends Water {
     native
   }) {
     try {
+      if (!native) {
+        logger.error(
+          '`native` should be present anytime a new token is being created. This enables the server to process a token as a native device or a website'
+        )
+      }
+
+      logger.info('checking password match')
       if (password !== confirmPassword) {
         throw 'passwords do not match'
       }
@@ -121,11 +128,13 @@ class UserService extends Water {
 
       const hashedPassword = hashPassword(password)
 
+      logger.info('checking user exists')
       const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
       if (userExists) {
         throw 'An account with this email aready exists. Please try a different email or login with that account.'
       }
 
+      logger.info('service add new user')
       const { userId } = await this.userDB.addUserToDatabase({
         email,
         firstName,
@@ -133,6 +142,9 @@ class UserService extends Water {
         password: hashedPassword
       })
 
+      logger.info(`userId returned: ${userId}`)
+
+      logger.info('creating default picture')
       let profileImageUrl
       if (process.env.NODE_ENV === 'production') {
         const { fileName } = await createDefaultProfilePicture({
@@ -164,23 +176,36 @@ class UserService extends Water {
         }
       })
 
+      logger.info('saving user keywords')
       this.search.saveUserKeywords({
         searchableFields: user,
         userId
       })
 
-      const { conversation_id } = await this.message.createConversation({
-        userIds: [userId, process.env.ADMIN_ID]
-      })
+      logger.info('creating new introduction conversation')
+      if (process.env.ADMIN_ID) {
+        const { conversation_id } = await this.message.createConversation({
+          userIds: [userId, process.env.ADMIN_ID]
+        })
 
-      await this.message.sendMessage({
-        conversationId: conversation_id,
-        senderId: process.env.ADMIN_ID,
-        messageBody: fs.readFileSync(process.env.PATH_TO_INTRO_TEXT, 'utf-8'),
-        dataReference: ''
-      })
+        await this.message.sendMessage({
+          conversationId: conversation_id,
+          senderId: process.env.ADMIN_ID,
+          messageBody: fs.readFileSync(process.env.PATH_TO_INTRO_TEXT, 'utf-8'),
+          dataReference: ''
+        })
+      } else {
+        logger.info('skip creating an intro message for testing')
+      }
 
-      return { user, token: this.auth.issue({ id: userId, native }) }
+      const authToken = this.auth.issue({ id: userId, native: native ?? false })
+
+      logger.info('auth token created')
+
+      return {
+        user,
+        token: authToken
+      }
     } catch (error) {
       logger.error(error)
     }

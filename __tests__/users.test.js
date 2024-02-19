@@ -1,6 +1,6 @@
 const SundayService = require('..')
 
-let serviceHandler, token, userId, secondUserId, newAdventure
+let serviceHandler, userId, secondUserId, newAdventure
 
 jest.mock('../Services/utils/sharp')
 
@@ -9,10 +9,10 @@ describe('user service layer testing', () => {
     serviceHandler = new SundayService(
       {
         host: 'localhost',
-        user: 'byf',
-        password: 'backyard',
+        user: 'root',
+        password: 'skiing',
         database: 'test_users',
-        port: '3306'
+        port: '3310'
       },
       'secret'
     )
@@ -91,7 +91,7 @@ describe('user service layer testing', () => {
 
       expect(response.length).toBe(1)
       expect(response[0].display_name).toBeDefined()
-      expect(response[0].id).toBeDefined()
+      expect(response[0].user_id).toBeDefined()
       expect(response[0].email).toBeDefined()
     })
 
@@ -132,7 +132,7 @@ describe('user service layer testing', () => {
 
       expect(friends.length).toBe(1)
       expect(friends[0].display_name).toBeDefined()
-      expect(friends[0].id).toBeDefined()
+      expect(friends[0].user_id).toBeDefined()
     })
 
     test('can edit a user', async () => {

@@ -13,6 +13,7 @@ CREATE TABLE users(
     profile_picture_url VARCHAR(255),
     date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    email_opt_out TINYINT DEFAULT 0,
     PRIMARY KEY(id)
 );
 
@@ -65,7 +66,6 @@ CREATE TABLE hike(
     id INT AUTO_INCREMENT,
     summit_elevation INT,
     base_elevation INT,
-    distance FLOAT,
     season VARCHAR(100),
     trail_path TEXT,
     elevations TEXT,
@@ -76,7 +76,6 @@ CREATE TABLE bike(
     id INT AUTO_INCREMENT,
     summit_elevation INT,
     base_elevation INT,
-    distance FLOAT,
     season VARCHAR(100),
     trail_path TEXT,
     elevations TEXT,
@@ -87,12 +86,12 @@ CREATE TABLE bike(
 
 CREATE TABLE ski_approach(
     id INT AUTO_INCREMENT
-    distance VARCHAR(50),
     summit_elevation INT,
     base_elevation INT,
     gear VARCHAR(50),
     trail_path TEXT,
     elevations TEXT,
+    exposure INT,
     PRIMARY KEY(id)
 );
 
@@ -113,7 +112,7 @@ CREATE TABLE adventures(
     date_created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     nearest_city VARCHAR(100),
     public TINYINT NOT NULL,
-    rating FLOAT,
+    rating VARCHAR(50),
     difficulty VARCHAR(50),
     PRIMARY KEY(id),
     FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE,

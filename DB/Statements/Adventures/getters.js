@@ -40,7 +40,7 @@ const selectAdventureByIdGroup = {
       a.adventure_name AS adventure_name,
       a.adventure_type AS adventure_type,
       a.bio AS bio,
-      a.coordinates AS coordinates_lat,
+      a.coordinates_lat AS coordinates_lat,
       a.coordinates_lng AS coordinates_lng,
       a.creator_id AS creator_id,
       CONCAT(u.first_name, " ", u.last_name) AS creator_name,
@@ -55,10 +55,11 @@ const selectAdventureByIdGroup = {
       sa.elevations AS elevations,
       sa.summit_elevation AS summit_elevation,
       sa.base_elevation AS base_elevation,
-      sa.gear AS gear
+      sa.gear AS gear,
+      sa.exposure AS exposure
       FROM adventures AS a
       INNER JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
-      INNER JOIN users AS u ON a.creator_id = us.id
+      INNER JOIN users AS u ON a.creator_id = u.id
       WHERE a.id = ?`
 }
 // get adventures by distance within a type
@@ -85,6 +86,19 @@ const getKeywordsStatement =
 
 const selectAdventuresStatement =
   'SELECT id, adventure_name, adventure_type, public, coordinates_lat, coordinates_lng FROM adventures WHERE adventure_type = ? AND public = 1'
+const selectSkiApproachStatement = `
+  SELECT
+  a.id,
+  a.adventure_name,
+  a.adventure_type,
+  a.public,
+  a.coordinates_lat,
+  a.coordinates_lng,
+  sa.trail_path
+  FROM adventures AS a
+  INNER JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
+  WHERE a.adventure_type = "skiApproach" AND public = 1
+`
 const getSpecificAdventureId = `SELECT
     adventure_type,
     CASE 
@@ -98,6 +112,7 @@ const getSpecificAdventureId = `SELECT
 module.exports = {
   getAdventureTypeStatement,
   selectAdventureByIdGroup,
+  selectSkiApproachStatement,
   getCloseAdventures,
   getAdventureRatingAndDifficulty,
   searchAdventureStatement,

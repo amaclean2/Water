@@ -102,6 +102,10 @@ class SearchService extends Water {
    */
   async saveAdventureKeywords({ searchableFields, adventureId }) {
     try {
+      if (!searchableFields || !adventureId) {
+        throw 'searchableFields and adventureId are required'
+      }
+
       const searchString = this.adventureKeywordLibrary
         .map((key) => {
           const text = searchableFields[key]

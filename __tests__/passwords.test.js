@@ -12,10 +12,10 @@ describe('password service layer testing', () => {
     serviceHandler = new SundayService(
       {
         host: 'localhost',
-        user: 'byf',
-        password: 'backyard',
+        user: 'root',
+        password: 'skiing',
         database: 'test_passwords',
-        port: '3306'
+        port: '3310'
       },
       'secret'
     )
@@ -40,7 +40,7 @@ describe('password service layer testing', () => {
     }, 100)
   })
 
-  test('can get a token from a password rest email', async () => {
+  test('can get a token from a password reset email', async () => {
     const mockEmailCallback = jest.fn(() => Promise.resolve({ email: '' }))
     const response =
       await serviceHandler.passwordService.sendPasswordResetEmail(
@@ -59,7 +59,7 @@ describe('password service layer testing', () => {
 
     resetToken = params.resetToken
 
-    expect(response).toBe('password reset email sent')
+    expect(response).toBe(`password reset email sent to ${creator.email}`)
   })
 
   test('a new password is saved', async () => {

@@ -6,12 +6,6 @@ const updateAdventureStatements = {
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.avg_angle = ? WHERE a.id = ?',
   max_angle:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.max_angle = ? WHERE a.id = ? ',
-  approach_distance:
-    'UPDATE ski_approach AS sa INNER JOIN adventures AS a ON a.ski_approach_id = sa.id SET sa.distance = ? WHERE a.id = ?',
-  hike_distance:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.distance = ? WHERE a.id = ?',
-  bike_distance:
-    'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.distance = ? WHERE a.id = ?',
   aspect:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.aspect = ? WHERE a.id = ?',
   bio: 'UPDATE adventures SET bio = ? WHERE id = ?',
@@ -27,8 +21,10 @@ const updateAdventureStatements = {
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_hike_id = b.id SET b.summit_elevation = ? WHERE a.id = ?',
   ski_approach_summit_elevation:
     'UPDATE ski_approach AS sa INNER JOIN adventures AS a ON a.ski_approach_id = sa.id SET sa.summit_elevation = ? WHERE a.id = ?',
-  exposure:
+  ski_exposure:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.exposure = ? WHERE a.id = ?',
+  approach_exposure:
+    'UPDATE ski_approach AS sa INNER JOIN adventures AS a ON a.ski_approach_id = sa.id SET sa.exposure = ? WHERE a.id = ?',
   first_ascent:
     'UPDATE climb AS c INNER JOIN adventures AS a ON a.adventure_climb_id = c.id SET c.first_ascent = ? WHERE a.id = ?',
   ski_base_elevation:

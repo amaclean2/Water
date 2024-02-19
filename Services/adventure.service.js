@@ -93,12 +93,15 @@ class AdventureService extends Water {
    * @returns {Promise<CreateAdventureResponse>} | an object containing the adventure and the geojson list
    */
   async createAdventure({ adventureObject }) {
+    logger.info('creating new adventure')
     const adventureId = await this.adventureDB.addAdventure(adventureObject)
     const adventure = await this.#buildAdventureObject({
       id: adventureId,
       type: adventureObject.adventure_type,
       providedObject: adventureObject
     })
+
+    logger.info('adventure object built successfully')
 
     // we need to rebuild the cached adventure list. Since we can do this with data we already have,
     // it doesn't require another round trip to the database
@@ -117,7 +120,7 @@ class AdventureService extends Water {
 
     this.search.saveAdventureKeywords({
       searchableFields: adventure,
-      id: adventure.id
+      adventureId
     })
 
     return { adventure, adventureList: updatedCacheObject }
@@ -143,7 +146,7 @@ class AdventureService extends Water {
         for (const adventure in allAdventures) {
           this.search.saveAdventureKeywords({
             searchableFields: allAdventures[adventure],
-            id: allAdventures[adventure].id
+            adventureId: allAdventures[adventure].id
           })
         }
 
@@ -163,6 +166,13 @@ class AdventureService extends Water {
       const cachedResults = this.adventureCache.get(adventureType)
 
       if (cachedResults) {
+        if (adventureType === 'ski') {
+          return {
+            ski: cachedResults,
+            skiApproach: this.adventureCache.get('skiApproach')
+          }
+        }
+
         return {
           [adventureType]: cachedResults
         }
@@ -177,6 +187,14 @@ class AdventureService extends Water {
         adventures[adventureType],
         CACHE_TIMEOUT
       )
+
+      if (adventureType === 'ski') {
+        this.adventureCache.put(
+          'skiApproach',
+          adventures.skiApproach,
+          CACHE_TIMEOUT
+        )
+      }
 
       return adventures
     } catch (error) {
@@ -240,6 +258,8 @@ class AdventureService extends Water {
   }
 
   /**
+   * @description this function checks the current ratings of an adventure to make sure the new
+   * rating you're about to add makes sense in addition to it
    * @param {Object} params
    * @param {number} params.adventureId
    * @param {string} params.difficulty
@@ -275,6 +295,15 @@ class AdventureService extends Water {
     return meters * 3.28084
   }
 
+  /**
+   * @param {Object} params
+   * @param {Object} params.field
+   * @param {number} params.field.adventure_id
+   * @param {string} params.field.adventure_type
+   * @param {string} params.field.path | the first number in each subarray is the lng coordinate, the second is the lat coordinate
+   * @param {string} params.field.elevations | the first number is the elevation, the second number is the distance along the path
+   * @returns {Object} | field object
+   */
   async databaseEditPath({ field }) {
     try {
       const elevations = JSON.parse(field.elevations)
