@@ -34,6 +34,17 @@ CREATE TABLE friends(
     FOREIGN KEY(leader_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE ski_approach(
+    id INT AUTO_INCREMENT,
+    summit_elevation INT,
+    base_elevation INT,
+    gear VARCHAR(50),
+    trail_path TEXT,
+    elevations TEXT,
+    exposure INT,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE ski(
     id INT AUTO_INCREMENT,
     avg_angle FLOAT,
@@ -84,17 +95,6 @@ CREATE TABLE bike(
     PRIMARY KEY(id)
 );
 
-CREATE TABLE ski_approach(
-    id INT AUTO_INCREMENT,
-    summit_elevation INT,
-    base_elevation INT,
-    gear VARCHAR(50),
-    trail_path TEXT,
-    elevations TEXT,
-    exposure INT,
-    PRIMARY KEY(id)
-);
-
 CREATE TABLE adventures(
     id INT AUTO_INCREMENT,
     adventure_ski_id INT,
@@ -104,7 +104,6 @@ CREATE TABLE adventures(
     ski_approach_id INT,
     adventure_name VARCHAR(100) NOT NULL,
     adventure_type VARCHAR(50) NOT NULL,
-    difficulty VARCHAR(50),
     bio TEXT,
     coordinates_lat FLOAT NOT NULL,
     coordinates_lng FLOAT NOT NULL,
@@ -126,7 +125,8 @@ CREATE TABLE adventures(
 CREATE TABLE device_tokens(
     token VARCHAR(100),
     user_id INT,
-    PRIMARY KEY(token),
+    date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id),
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -213,6 +213,7 @@ CREATE INDEX adventure_type_index ON adventures(adventure_type);
 -- DROP TABLE climb;
 -- DROP TABLE hike;
 -- DROP TABLE bike;
+-- DROP TABLE ski_approach;
 -- DROP TABLE friends;
 -- DROP TABLE messages;
 -- DROP TABLE conversation_interactions;
