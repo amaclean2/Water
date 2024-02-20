@@ -267,14 +267,16 @@ class UserDataLayer extends DataLayer {
                 display_name: result.follower_display_name,
                 first_name: result.follower_first_name,
                 profile_picture_url: result.follower_picture ?? '',
-                email: result.follower_email
+                email: result.follower_email,
+                email_opt_out: result.follower_email_opt
               }
             : {
                 user_id: result.leader_id,
                 display_name: result.leader_display_name,
                 first_name: result.leader_first_name,
                 profile_picture_url: result.leader_picture ?? '',
-                email: result.leader_email
+                email: result.leader_email,
+                email_opt_out: result.leader_email_opt
               }
         )
       )

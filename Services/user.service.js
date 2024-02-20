@@ -1,6 +1,6 @@
 const fs = require('fs')
 const Water = require('.')
-const { handleEmailUserFollowed } = require('./utils/email')
+const { handleEmailUserFollowed, handleNewUserEmail } = require('./utils/email')
 const SearchService = require('./search.service')
 const MessagingService = require('./messages.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
@@ -101,17 +101,21 @@ class UserService extends Water {
    * @param {string} params.firstName | user first_name
    * @param {string} params.lastName | user last_name
    * @param {boolean} params.native | stores in the token whether the connected client is an app or a web page
+   * @param {function} testEmailCallback | don't send an actual email when testing
    * @returns {Promise<NewUserResponse>} an object containing a new user and a token
    */
-  async addNewUser({
-    email,
-    password,
-    confirmPassword,
-    firstName,
-    lastName,
-    baseImageUrl,
-    native
-  }) {
+  async addNewUser(
+    {
+      email,
+      password,
+      confirmPassword,
+      firstName,
+      lastName,
+      baseImageUrl,
+      native
+    },
+    testEmailCallback
+  ) {
     try {
       if (!native) {
         logger.error(
@@ -198,6 +202,13 @@ class UserService extends Water {
       } else {
         logger.info('skip creating an intro message for testing')
       }
+
+      const callback = testEmailCallback ?? handleNewUserEmail
+
+      callback({
+        email,
+        displayName: `${firstName} ${lastName}`
+      })
 
       const authToken = this.auth.issue({ id: userId, native: native ?? false })
 
@@ -299,12 +310,13 @@ class UserService extends Water {
             ({ user_id }) => user_id === ids.leaderId
           )
 
-          const callback = testEmailCallback || handleEmailUserFollowed
+          const callback = testEmailCallback ?? handleEmailUserFollowed
 
-          if (!user.email_opt_out) {
+          if (!newFriend.email_opt_out) {
             return callback({
               email: newFriend.email,
-              followingUserName: `${user.first_name} ${user.last_name}`
+              displayName: newFriend.display_name,
+              followerDisplayName: `${user.first_name} ${user.last_name}`
             }).then(() => user)
           } else {
             return user

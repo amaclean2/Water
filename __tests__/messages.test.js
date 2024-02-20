@@ -19,31 +19,44 @@ describe('message service layer testing', () => {
 
     await serviceHandler.createTables()
 
-    let newUser = await serviceHandler.userService.addNewUser({
-      email: 'andrew@email.com',
-      password: 'skiing',
-      confirmPassword: 'skiing',
-      firstName: 'Andrew',
-      lastName: 'Maclean'
-    })
+    const mockEmailCallback = jest.fn(() =>
+      Promise.resolve({ email: '', displayName: '' })
+    )
+
+    let newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'andrew@email.com',
+        password: 'skiing',
+        confirmPassword: 'skiing',
+        firstName: 'Andrew',
+        lastName: 'Maclean'
+      },
+      mockEmailCallback
+    )
     firstUser = newUser.user
 
-    newUser = await serviceHandler.userService.addNewUser({
-      email: 'mark@email.com',
-      password: 'cycling',
-      confirmPassword: 'cycling',
-      firstName: 'Mark',
-      lastName: 'Cavendish'
-    })
+    newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'mark@email.com',
+        password: 'cycling',
+        confirmPassword: 'cycling',
+        firstName: 'Mark',
+        lastName: 'Cavendish'
+      },
+      mockEmailCallback
+    )
     secondUser = newUser.user
 
-    newUser = await serviceHandler.userService.addNewUser({
-      email: 'jessee@email.com',
-      password: 'running',
-      confirmPassword: 'running',
-      firstName: 'Jessee',
-      lastName: 'Thomas'
-    })
+    newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'jessee@email.com',
+        password: 'running',
+        confirmPassword: 'running',
+        firstName: 'Jessee',
+        lastName: 'Thomas'
+      },
+      mockEmailCallback
+    )
     thirdUser = newUser.user
   })
   afterAll(async () => {

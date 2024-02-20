@@ -28,13 +28,19 @@ describe('user service layer testing', () => {
   })
   describe('user happy paths', () => {
     test('can add a new user', async () => {
-      const newUser = await serviceHandler.userService.addNewUser({
-        email: 'user@123.com',
-        password: 'skiing',
-        confirmPassword: 'skiing',
-        firstName: 'Jeremy',
-        lastName: 'Clarkson'
-      })
+      const mockEmailCallback = jest.fn(() =>
+        Promise.resolve({ email: '', displayName: '' })
+      )
+      const newUser = await serviceHandler.userService.addNewUser(
+        {
+          email: 'user@123.com',
+          password: 'skiing',
+          confirmPassword: 'skiing',
+          firstName: 'Jeremy',
+          lastName: 'Clarkson'
+        },
+        mockEmailCallback
+      )
 
       expect(newUser.user).toBeDefined()
       expect(newUser.token).toBeDefined()
@@ -97,16 +103,26 @@ describe('user service layer testing', () => {
     })
 
     test('can follow a different user', async () => {
-      const secondUser = await serviceHandler.userService.addNewUser({
+      const mockEmailCallback = jest.fn(() =>
+        Promise.resolve({ email: '', displayName: '', followerDisplayName: '' })
+      )
+      const secondUser = await serviceHandler.userService.addNewUser(
+        {
+          email: 'adam@123.org',
+          password: 'economics',
+          confirmPassword: 'economics',
+          firstName: 'Adam',
+          lastName: 'Smith'
+        },
+        mockEmailCallback
+      )
+
+      expect(mockEmailCallback).toHaveBeenCalledWith({
         email: 'adam@123.org',
-        password: 'economics',
-        confirmPassword: 'economics',
-        firstName: 'Adam',
-        lastName: 'Smith'
+        displayName: 'Adam Smith'
       })
 
       token = secondUser.token
-      const mockEmailCallback = jest.fn(() => Promise.resolve({ user: {} }))
 
       secondUserId = secondUser.user.id
 
@@ -118,9 +134,11 @@ describe('user service layer testing', () => {
         mockEmailCallback
       )
 
-      expect(mockEmailCallback).toHaveBeenCalledWith({
+      expect(mockEmailCallback).toHaveBeenCalledTimes(2)
+      expect(mockEmailCallback).toHaveBeenLastCalledWith({
         email: 'user@123.com',
-        followingUserName: 'Adam Smith'
+        displayName: 'Jeremy Clarkson',
+        followerDisplayName: 'Adam Smith'
       })
       expect(updatedSecondUser.friends.length).toBe(1)
     })
@@ -260,25 +278,33 @@ describe('user service layer testing', () => {
       }
     })
     test('trying to create a user with an email that aready exists gets handled properly', async () => {
-      let response = await serviceHandler.userService.addNewUser({
-        email: 'user@123.com',
-        password: 'skiing',
-        confirmPassword: 'skiing',
-        firstName: 'Andrew',
-        lastName: 'Maclean'
-      })
+      const mockEmailCallback = jest.fn(() => Promise.resolve({ user: {} }))
+
+      let response = await serviceHandler.userService.addNewUser(
+        {
+          email: 'user@123.com',
+          password: 'skiing',
+          confirmPassword: 'skiing',
+          firstName: 'Andrew',
+          lastName: 'Maclean'
+        },
+        mockEmailCallback
+      )
 
       expect(response.user).toBeDefined()
       expect(response.token).toBeDefined()
 
       try {
-        response = await serviceHandler.userService.addNewUser({
-          email: 'user@123.com',
-          password: 'snowboarding',
-          confirmPassword: 'snowboarding',
-          firstName: 'Travis',
-          lastName: 'Rice'
-        })
+        response = await serviceHandler.userService.addNewUser(
+          {
+            email: 'user@123.com',
+            password: 'snowboarding',
+            confirmPassword: 'snowboarding',
+            firstName: 'Travis',
+            lastName: 'Rice'
+          },
+          mockEmailCallback
+        )
       } catch (error) {
         expect(error).toBe(
           'An account with this email aready exists. Please try a different email or login with that account.'

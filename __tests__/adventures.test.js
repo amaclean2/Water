@@ -20,13 +20,20 @@ describe('adventure service layer testing', () => {
 
     await serviceHandler.createTables()
 
-    const { user } = await serviceHandler.userService.addNewUser({
-      email: 'user@123.com',
-      password: 'skiing',
-      confirmPassword: 'skiing',
-      firstName: 'Jeremy',
-      lastName: 'Clarkson'
-    })
+    const mockEmailCallback = jest.fn(() =>
+      Promise.resolve({ email: '', displayName: '' })
+    )
+
+    const { user } = await serviceHandler.userService.addNewUser(
+      {
+        email: 'user@123.com',
+        password: 'skiing',
+        confirmPassword: 'skiing',
+        firstName: 'Jeremy',
+        lastName: 'Clarkson'
+      },
+      mockEmailCallback
+    )
 
     creator = user
   })
