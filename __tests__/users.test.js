@@ -1,6 +1,6 @@
 const SundayService = require('..')
 
-let serviceHandler, userId, secondUserId, newAdventure
+let serviceHandler, userId, secondUserId, newAdventure, userEmail
 
 jest.mock('../Services/utils/sharp')
 
@@ -55,6 +55,7 @@ describe('user service layer testing', () => {
       expect(response.token).toBeDefined()
 
       userId = response.user.id
+      userEmail = response.user.email
     })
 
     test('can return to that user', async () => {
@@ -223,7 +224,7 @@ describe('user service layer testing', () => {
       expect(preUserResponse.email_opt_out).toBe(false)
 
       const response = await serviceHandler.userService.optOutOfEmail({
-        userId
+        userEmail
       })
 
       expect(response).toBe('user opted out successfully')

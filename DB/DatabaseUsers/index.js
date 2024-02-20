@@ -283,11 +283,11 @@ class UserDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.userId
+   * @param {string} params.userEmail
    * @returns {Promise<string>} | a validation string that the user opt out variable was switched
    */
-  switchEmailOpt({ userId }) {
-    return this.sendQuery(optOutOfEmailStatement, [userId])
+  switchEmailOpt({ userEmail }) {
+    return this.sendQuery(optOutOfEmailStatement, [userEmail])
       .then(() => 'user opted out successfully')
       .catch(failedUpdate)
   }

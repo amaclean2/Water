@@ -314,11 +314,16 @@ class UserService extends Water {
     )
   }
 
-  async optOutOfEmail({ userId }) {
+  /**
+   * @param {Object} params
+   * @param {string} params.userEmail
+   * @returns {Promise<string>}
+   */
+  async optOutOfEmail({ userEmail }) {
     try {
-      if (!userId) throw 'userId field is required'
+      if (!userEmail) throw 'userId field is required'
 
-      const resp = await this.userDB.switchEmailOpt({ userId })
+      const resp = await this.userDB.switchEmailOpt({ userEmail })
 
       logger.info(resp)
       return resp
