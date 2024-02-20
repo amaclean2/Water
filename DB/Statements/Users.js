@@ -11,9 +11,9 @@ const insertSearchableStatement =
   'REPLACE INTO searchable_users (searchable_text, user_id) VALUES (?, ?)'
 const selectUserIdStatement = 'SELECT id FROM users WHERE email = ?'
 const getUserWithEmailStatement =
-  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url FROM users WHERE email = ?'
+  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url, email_opt_out FROM users WHERE email = ?'
 const getUserByIdStatement =
-  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url FROM users WHERE id = ?'
+  'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url, email_opt_out FROM users WHERE id = ?'
 const updateUserStatements = {
   first_name:
     'UPDATE users SET first_name = ?, last_updated = NOW() WHERE id = ?',
@@ -41,6 +41,7 @@ const findFromFriendsStatement =
   "SELECT DISTINCT CONCAT(u.first_name, ' ', u.last_name) AS display_name, u.email, u.profile_picture_url, u.id AS user_id FROM users AS u INNER JOIN friends AS f ON (f.follower_id != ? AND f.follower_id = u.id) OR (f.leader_id != ? AND f.leader_id = u.id) INNER JOIN searchable_users AS su ON su.user_id = u.id WHERE su.searchable_text LIKE ?"
 const deleteUserStatement = 'DELETE FROM users WHERE id = ?'
 const deleteSearchableStatement = `DELETE FROM searchable_users WHERE user_id = ?`
+const optOutOfEmailStatement = 'UPDATE users SET email_opt_out = 1 WHERE id = ?'
 
 module.exports = {
   createUserStatement,
@@ -53,5 +54,6 @@ module.exports = {
   findNewFriendStatement,
   findFromFriendsStatement,
   getSearchFields,
-  deleteSearchableStatement
+  deleteSearchableStatement,
+  optOutOfEmailStatement
 }

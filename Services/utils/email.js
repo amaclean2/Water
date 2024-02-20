@@ -10,7 +10,7 @@ const handleEmailReset = async ({ email, resetToken }) => {
     html: `<p>Whoops, looks like you forgot your password<br />Here's a link to reset it.</p><a href="https://sundaypeak.com/password?resetToken=${resetToken}">Create a new password</a>`
   })
 
-  logger.info('message sent', info.messageId, email)
+  logger.info('reset email message sent', info.messageId, email)
 }
 
 const handleEmailUserFollowed = async ({ email, followingUserName }) => {
@@ -21,7 +21,7 @@ const handleEmailUserFollowed = async ({ email, followingUserName }) => {
     text: `User ${followingUserName} wants to go on an adventure. Log in to have a chat: https://sundaypeak.com/login`
   })
 
-  logger.info('message sent', info.messageId, email)
+  logger.info('new friend message sent', info.messageId, email)
 }
 
 module.exports = {

@@ -79,6 +79,7 @@ class UserService extends Water {
       ...userObject,
       friends,
       images,
+      email_opt_out: !!userObject.email_opt_out,
       completed_adventures: completedAdventures.map((activity) => ({
         ...activity,
         user_id: activity.creator_id
@@ -300,13 +301,31 @@ class UserService extends Water {
 
           const callback = testEmailCallback || handleEmailUserFollowed
 
-          return callback({
-            email: newFriend.email,
-            followingUserName: newFriend.display_name
-          }).then(() => user)
+          if (!user.email_opt_out) {
+            return callback({
+              email: newFriend.email,
+              followingUserName: `${user.first_name} ${user.last_name}`
+            }).then(() => user)
+          } else {
+            return user
+          }
         }
       )
     )
+  }
+
+  async optOutOfEmail({ userId }) {
+    try {
+      if (!userId) throw 'userId field is required'
+
+      const resp = await this.userDB.switchEmailOpt({ userId })
+
+      logger.info(resp)
+      return resp
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**

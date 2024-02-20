@@ -18,7 +18,8 @@ const {
   getIsFriendStatement,
   createUserPictureStatement,
   getUserPicturesStatement,
-  deletePictureStatement
+  deletePictureStatement,
+  optOutOfEmailStatement
 } = require('../Statements')
 const {
   failedInsertion,
@@ -278,6 +279,17 @@ class UserDataLayer extends DataLayer {
         )
       )
       .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<string>} | a validation string that the user opt out variable was switched
+   */
+  switchEmailOpt({ userId }) {
+    return this.sendQuery(optOutOfEmailStatement, [userId])
+      .then(() => 'user opted out successfully')
+      .catch(failedUpdate)
   }
 
   /**

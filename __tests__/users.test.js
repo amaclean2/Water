@@ -119,7 +119,7 @@ describe('user service layer testing', () => {
 
       expect(mockEmailCallback).toHaveBeenCalledWith({
         email: 'user@123.com',
-        followingUserName: 'Jeremy Clarkson'
+        followingUserName: 'Adam Smith'
       })
       expect(updatedSecondUser.friends.length).toBe(1)
     })
@@ -213,6 +213,26 @@ describe('user service layer testing', () => {
       expect(afterUser.todo_adventures.length).toBe(0)
       expect(afterUser.completed_adventures).toBeDefined()
       expect(afterUser.completed_adventures.length).toBe(1)
+    })
+
+    test('can unsubscribe a user from emails', async () => {
+      const preUserResponse = await serviceHandler.userService.getUserFromId({
+        userId
+      })
+
+      expect(preUserResponse.email_opt_out).toBe(false)
+
+      const response = await serviceHandler.userService.optOutOfEmail({
+        userId
+      })
+
+      expect(response).toBe('user opted out successfully')
+
+      const userResponse = await serviceHandler.userService.getUserFromId({
+        userId
+      })
+
+      expect(userResponse.email_opt_out).toBe(true)
     })
 
     test('can delete a user', async () => {
