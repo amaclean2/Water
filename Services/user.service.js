@@ -12,6 +12,7 @@ const {
   removeImage
 } = require('./utils/sharp')
 const logger = require('../Config/logger')
+const { createAPNNotification } = require('./utils/notifications')
 
 class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
@@ -117,28 +118,35 @@ class UserService extends Water {
     testEmailCallback
   ) {
     try {
+      // native is a variable that identifies the user client
       if (!native) {
         logger.error(
           '`native` should be present anytime a new token is being created. This enables the server to process a token as a native device or a website'
         )
       }
 
+      // if the passwords don't match, fail back to the client
       logger.info('checking password match')
       if (password !== confirmPassword) {
         throw 'passwords do not match'
       }
+
+      // if the passwords aren't formatted correctly, fail back to the client
       if (password.length < 5 || password.length > 50) {
         throw 'password length must be between 5 and 50 characters'
       }
 
+      // salt and hash the password so we don't store plain text passwords in our database
       const hashedPassword = hashPassword(password)
 
+      // check if the user already exists, if so, fail back to the client
       logger.info('checking user exists')
       const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
       if (userExists) {
         throw 'An account with this email aready exists. Please try a different email or login with that account.'
       }
 
+      // if everything above checks out, create the user
       logger.info('service add new user')
       const { userId } = await this.userDB.addUserToDatabase({
         email,
@@ -149,6 +157,7 @@ class UserService extends Water {
 
       logger.info(`userId returned: ${userId}`)
 
+      // the user needs a picture for their profile, create a default one
       logger.info('creating default picture')
       let profileImageUrl
       if (process.env.NODE_ENV === 'production') {
@@ -159,15 +168,18 @@ class UserService extends Water {
 
         profileImageUrl = `${baseImageUrl}profile/${fileName}`
 
+        // update the user with the picture
         await this.userDB.updateDatabaseUser({
           userId,
           fieldName: 'profile_picture_url',
           fieldValue: profileImageUrl
         })
       } else {
+        // if this isn't a production environment, screw it
         profileImageUrl = ''
       }
 
+      // build the new user object with the data provided
       const user = await this.#buildUserObject({
         initiation: {
           providedObject: {
@@ -181,12 +193,14 @@ class UserService extends Water {
         }
       })
 
+      // save information about the user in a string that can be looked up easily
       logger.info('saving user keywords')
       this.search.saveUserKeywords({
         searchableFields: user,
         userId
       })
 
+      // send a message to the user introducing them to the app
       logger.info('creating new introduction conversation')
       if (process.env.ADMIN_ID) {
         const { conversation_id } = await this.message.createConversation({
@@ -203,17 +217,21 @@ class UserService extends Water {
         logger.info('skip creating an intro message for testing')
       }
 
+      // if this is a test environment, don't send an email
       const callback = testEmailCallback ?? handleNewUserEmail
 
+      // send an email to the new user indicating an account was created
       callback({
         email,
         displayName: `${firstName} ${lastName}`
       })
 
+      // issue an auth token for the new session
       const authToken = this.auth.issue({ id: userId, native: native ?? false })
 
       logger.info('auth token created')
 
+      // return the user and the auth token
       return {
         user,
         token: authToken
@@ -302,28 +320,46 @@ class UserService extends Water {
    * @param {FriendEmailCallback} [testEmailCallback] | in jest this can be replaced with a mock
    * @returns {Promise<UserObject>} the following user with the new friends list
    */
-  friendUser(ids, testEmailCallback) {
-    return this.userDB.createUserFollowing(ids).then(() =>
-      this.#buildUserObject({ initiation: { id: ids.followerId } }).then(
-        (user) => {
-          const newFriend = user.friends.find(
-            ({ user_id }) => user_id === ids.leaderId
-          )
+  async friendUser(ids, testEmailCallback) {
+    // follow the new user
+    await this.userDB.createUserFollowing(ids)
 
-          const callback = testEmailCallback ?? handleEmailUserFollowed
+    // rebuild the user object
+    const user = await this.#buildUserObject({
+      initiation: { id: ids.followerId }
+    })
 
-          if (!newFriend.email_opt_out) {
-            return callback({
-              email: newFriend.email,
-              displayName: newFriend.display_name,
-              followerDisplayName: `${user.first_name} ${user.last_name}`
-            }).then(() => user)
-          } else {
-            return user
-          }
-        }
-      )
+    // get the followed user
+    const newFriend = user.friends.find(
+      ({ user_id }) => user_id == ids.leaderId
     )
+
+    // if this is a test case, don't actually send an email
+    const callback = testEmailCallback ?? handleEmailUserFollowed
+
+    // if the user opted out of emails, don't send an email
+    if (!newFriend.email_opt_out) {
+      await callback({
+        email: newFriend.email,
+        displayName: newFriend.display_name,
+        followerDisplayName: `${user.first_name} ${user.last_name}`
+      })
+    }
+
+    // get the apns device token for the receiving user
+    const dt = await this.userDB.getDeviceTokenPerUser({
+      userId: newFriend.user_id
+    })
+
+    // if this isn't a test case, send a notification to the receiving user but only if there was a device token returned
+    if (!testEmailCallback && !!dt) {
+      createAPNNotification({
+        messageBody: `${user.first_name} ${user.last_name} has followed you`,
+        deviceTokens: [dt]
+      })
+    }
+
+    return user
   }
 
   /**

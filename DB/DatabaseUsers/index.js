@@ -21,6 +21,7 @@ const {
   deletePictureStatement,
   optOutOfEmailStatement
 } = require('../Statements')
+const { selectDeviceTokenForUserStatement } = require('../Statements/Messages')
 const {
   failedInsertion,
   failedQuery,
@@ -292,6 +293,17 @@ class UserDataLayer extends DataLayer {
     return this.sendQuery(optOutOfEmailStatement, [userEmail])
       .then(() => 'user opted out successfully')
       .catch(failedUpdate)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<number>} | return the device token for the user if it exists, otherwise null
+   */
+  getDeviceTokenPerUser({ userId }) {
+    return this.sendQuery(selectDeviceTokenForUserStatement, [userId])
+      .then(([results]) => (results.length ? results[0] : null))
+      .catch(failedQuery)
   }
 
   /**

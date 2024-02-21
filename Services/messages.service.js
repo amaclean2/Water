@@ -1,6 +1,7 @@
 const Water = require('.')
 const logger = require('../Config/logger')
 const SearchService = require('./search.service')
+const { createAPNNotification } = require('./utils/notifications')
 
 class MessagingService extends Water {
   constructor(sendQuery, jwtSecret) {
@@ -121,12 +122,20 @@ class MessagingService extends Water {
         .filter(({ user_id }) => user_id !== senderId)
         .map(({ token }) => token)
 
+      // send a notification to all connected clients
+      if (formattedTokens.length) {
+        logger.info(JSON.stringify({ deviceTokens: formattedTokens }))
+
+        logger.info('Sending notifications to connected device tokens')
+        createAPNNotification({ senderName, messageBody, deviceTokens })
+      }
+
+      // return the formatted data
       return {
         message_body: messageBody,
         user_id: senderId,
         conversation_id: conversationId,
-        data_reference: dataReference ?? null,
-        applied_tokens: formattedTokens
+        data_reference: dataReference ?? null
       }
     } catch (error) {
       logger.error(error)

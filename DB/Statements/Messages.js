@@ -33,6 +33,8 @@ const insertDeviceTokenStatement =
   'REPLACE INTO device_tokens (token, user_id) VALUES (?, ?)'
 const selectDeviceTokenStatement =
   'SELECT dt.token AS token, dt.user_id AS user_id FROM device_tokens AS dt INNER JOIN conversation_interactions AS ci ON dt.user_id = ci.user_id WHERE ci.conversation_id = ?'
+const selectDeviceTokenForUserStatement =
+  'SELECT token FROM device_tokens WHERE user_id = ?'
 
 module.exports = {
   createNewMessageStatement,
@@ -47,5 +49,6 @@ module.exports = {
   findConversationStatement,
   deleteConversationStatement,
   insertDeviceTokenStatement,
-  selectDeviceTokenStatement
+  selectDeviceTokenStatement,
+  selectDeviceTokenForUserStatement
 }
