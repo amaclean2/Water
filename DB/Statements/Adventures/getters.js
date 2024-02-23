@@ -66,6 +66,7 @@ const selectAdventureByIdGroup = {
 const getCloseAdventures = `SELECT
     id,
     adventure_name,
+    adventure_type,
     difficulty,
     rating,
     nearest_city,

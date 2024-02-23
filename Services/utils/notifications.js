@@ -7,7 +7,11 @@ const logger = require('../../Config/logger')
  * @param {string} params.messageBody
  * @param {number[]} params.deviceTokens
  */
-const createAPNNotification = ({ senderName, messageBody, deviceTokens }) => {
+const createAPNNotification = ({
+  senderName = 'Sunday Peak',
+  messageBody,
+  deviceTokens
+}) => {
   const options = {
     token: {
       key: process.env.PATH_TO_APNS_SECRET_KEY ?? '',
@@ -23,7 +27,7 @@ const createAPNNotification = ({ senderName, messageBody, deviceTokens }) => {
 
   note.expiry = 0
   note.alert = {
-    title: senderName ?? 'Sunday Peak',
+    title: senderName,
     body: messageBody
   }
   note.topic = 'com.sundaypeak.SundayPeak'

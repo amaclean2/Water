@@ -85,9 +85,16 @@ class MessagingService extends Water {
    * @param {number} params.senderId
    * @param {string} params.messageBody
    * @param {string} params.dataReference
+   * @param {string} params.senderName
    * @returns {Promise<{message_body: string, user_id: number, conversation_id: number, data_reference: string, applied_tokens: Array<string>}>} | an object containing all the relevant data about the message
    */
-  async sendMessage({ conversationId, senderId, messageBody, dataReference }) {
+  async sendMessage({
+    conversationId,
+    senderId,
+    messageBody,
+    dataReference,
+    senderName
+  }) {
     // add a new message to the messages table
     try {
       if (!conversationId || !senderId || !messageBody) {
@@ -127,7 +134,11 @@ class MessagingService extends Water {
         logger.info(JSON.stringify({ deviceTokens: formattedTokens }))
 
         logger.info('Sending notifications to connected device tokens')
-        createAPNNotification({ senderName, messageBody, deviceTokens })
+        createAPNNotification({
+          senderName,
+          messageBody,
+          deviceTokens: formattedTokens
+        })
       }
 
       // return the formatted data
