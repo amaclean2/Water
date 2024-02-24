@@ -230,26 +230,9 @@ class AdventureDataLayer extends DataLayer {
         adventureType
       })
     )
-    let adventureId
-    switch (adventureType) {
-      case 'ski':
-        adventureId = 'adventure_ski_id'
-        break
-      case 'climb':
-        adventureId = 'adventure_climb_id'
-        break
-      case 'hike':
-        adventureId = 'adventure_hike_id'
-        break
-      case 'bike':
-        adventureId = 'adventure_bike_id'
-        break
-      case 'skiApproach':
-        adventureId = 'ski_approach_id'
-    }
 
     return this.sendQuery(getCloseAdventures, [
-      adventureId,
+      adventureType,
       coordinates.lat,
       coordinates.lng,
       count

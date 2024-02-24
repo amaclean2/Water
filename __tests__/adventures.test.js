@@ -276,7 +276,7 @@ describe('adventure service layer testing', () => {
           coordinates: { lat: 10, lng: 3 }
         })
 
-      expect(adventures.length).toBe(5)
+      expect(adventures.length).toBe(1)
       expect(adventures[0].id).toBeDefined()
       expect(adventures[0].adventure_name).toBeDefined()
       expect(adventures[0].difficulty).toBeDefined()

@@ -72,7 +72,7 @@ const getCloseAdventures = `SELECT
     nearest_city,
     bio
     FROM adventures
-    WHERE public = 1 AND ? IS NOT NULL
+    WHERE public = 1 AND adventure_type = ?
     ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
 // get an adventure rating and difficulty
