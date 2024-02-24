@@ -237,7 +237,13 @@ class AdventureService extends Water {
       throw 'adventureType must be a string. Coordinates must be numbers and count must be a number'
     }
 
-    return this.adventureDB.getClosestAdventures({
+    if (
+      !['ski', 'climb', 'hike', 'skiApproach', 'bike'].includes(adventureType)
+    ) {
+      throw `adventureType must be the appropriate type. ['ski', 'climb', 'hike', 'skiApproach', 'bike']`
+    }
+
+    return this.adventureDB.getClosestAdventuresFromDB({
       adventureType,
       coordinates,
       count

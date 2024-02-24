@@ -216,15 +216,20 @@ class AdventureDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {string} params.adventureType | 'ski' | 'hike' | 'climb' | 'bike'
+   * @param {string} params.adventureType | 'ski' | 'hike' | 'climb' | 'bike' | 'skiApproach'
    * @param {Object} params.coordinates
    * @param {number} params.coordinates.lat
    * @param {number} params.coordinates.lng
    * @param {number} params.count
    * @returns {Promise<Object[]>} | returns a promise containing an array of adventure objects that are closest to the given coordinates
    */
-  getClosestAdventures({ adventureType, coordinates, count }) {
-    logger.info({ centerCoordinatesOfAdventures: coordinates })
+  getClosestAdventuresFromDB({ adventureType, coordinates, count }) {
+    logger.info(
+      JSON.stringify({
+        centerCoordinatesOfAdventures: coordinates,
+        adventureType
+      })
+    )
     let adventureId
     switch (adventureType) {
       case 'ski':
