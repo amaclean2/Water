@@ -78,7 +78,6 @@ const getClimbSpecificFields = (adventure) => [
 const getHikeSpecificFields = (adventure) => [
   adventure.summit_elevation ?? 0,
   adventure.base_elevation ?? 0,
-  adventure.distance ?? 0,
   adventure.season ?? '',
   adventure.trail_path ?? '[]',
   adventure.elevations ?? '[]'
@@ -88,7 +87,6 @@ const getHikeSpecificFields = (adventure) => [
 const getBikeSpecificFields = (adventure) => [
   adventure.summit_elevation ?? 0,
   adventure.base_elevation ?? 0,
-  adventure.distance ?? 0,
   adventure.season ?? '',
   adventure.trail_path ?? '[]',
   adventure.elevations ?? '[]',
@@ -97,7 +95,6 @@ const getBikeSpecificFields = (adventure) => [
 ]
 
 const getSkiApproachSpecificFields = (adventure) => [
-  adventure.distance ?? 0,
   adventure.summit_elevation ?? 0,
   adventure.base_elevation ?? 0,
   adventure.gear ?? '',

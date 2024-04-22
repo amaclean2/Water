@@ -19,7 +19,7 @@ const getUserConversationsStatement = `SELECT
   INNER JOIN users AS u ON u.id = ci.user_id
   INNER JOIN conversations AS c ON c.id = ci.conversation_id
   WHERE conversation_id IN ( SELECT conversation_id FROM conversation_interactions WHERE user_id = ? )
-  ORDER BY ci.unread DESC`
+  ORDER BY c.last_updated DESC`
 const setUnreadStatement =
   'UPDATE conversation_interactions SET unread = 1 WHERE conversation_id = ? AND user_id != ?'
 const setLastMessageStatement =
