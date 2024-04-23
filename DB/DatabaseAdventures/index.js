@@ -391,6 +391,14 @@ class AdventureDataLayer extends DataLayer {
         logger.info(
           `edit new general query on ${field.adventure_id}, ${field.name}`
         )
+
+        console.log(
+          field.name,
+          updateAdventureStatements[field.name],
+          field.value,
+          field.adventure_id
+        )
+
         await this.sendQuery(updateAdventureStatements[field.name], [
           field.value,
           field.adventure_id

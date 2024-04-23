@@ -2,7 +2,7 @@
 const updateAdventureStatements = {
   adventure_name: 'UPDATE adventures SET adventure_name = ? WHERE id = ?',
   coordinates_lat: 'UPDATE adventures SET coordinates_lat = ? WHERE id = ?',
-  coordiantes_lng: 'UDPATE adventures SET coordinates_lng = ? WHERE id = ?',
+  coordinates_lng: 'UPDATE adventures SET coordinates_lng = ? WHERE id = ?',
   difficulty: 'UPDATE adventures SET difficulty = ? WHERE id = ?',
   avg_angle:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.avg_angle = ? WHERE a.id = ?',
