@@ -340,6 +340,14 @@ class AdventureService extends Water {
             descent: totals[1]
           }
         })
+
+        return {
+          field,
+          summit_elevation: highest,
+          base_elevation: lowest,
+          climb: totals[0],
+          descent: totals[1]
+        }
       } else {
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
@@ -348,15 +356,12 @@ class AdventureService extends Water {
             base_elevation: lowest
           }
         })
-      }
 
-      logger.info(`database update finished on ${field.adventure_id}`)
-
-      return {
-        field,
-        summit_elevation: highest,
-        base_elevation: lowest,
-        ...(totals && { climb: totals[0], descent: totals[1] })
+        return {
+          field,
+          summit_elevation: highest,
+          base_elevation: lowest
+        }
       }
     } catch (error) {
       logger.error(error)
