@@ -313,33 +313,28 @@ class AdventureService extends Water {
   async databaseEditPath({ field }) {
     try {
       const elevations = JSON.parse(field.elevations)
-      const sortedElevations = elevations
-        .map((elev) => elev[0])
-        .sort((a, b) => a - b)
-      const highest =
-        Math.round(
-          this.convertMetersToFeet(sortedElevations.slice(-1)[0]) * 1000
-        ) / 1000
-      const lowest =
-        Math.round(this.convertMetersToFeet(sortedElevations[0]) * 1000) / 1000
 
-      let lastElevation = elevations[0][0]
-      let totals = [0, 0]
-      elevations.forEach((elev) => {
-        if (elev[0] - lastElevation > 0) {
-          totals[0] = elev[0] - lastElevation + totals[0]
-        } else {
-          totals[1] = elev[0] - lastElevation + totals[1]
-        }
-
-        lastElevation = elev[0]
-      })
-
-      logger.info(
-        `database path edit: ${totals}, highest: ${highest}, lowest: ${lowest}`
-      )
+      const highest = Math.round(Math.max(elevations.map((e) => e[0])))
+      const lowest = Math.round(Math.min(elevations.map((e) => e[0])))
 
       if (field.adventure_type === 'bike') {
+        let lastElevation = elevations[0][0]
+        let totals = [0, 0]
+        // calculating total elevation gain and loss
+        elevations.forEach((elev) => {
+          if (elev[0] - lastElevation > 0) {
+            totals[0] = elev[0] - lastElevation + totals[0]
+          } else {
+            totals[1] = elev[0] - lastElevation + totals[1]
+          }
+
+          lastElevation = elev[0]
+        })
+
+        logger.info(
+          `database path edit: ${totals}, highest: ${highest}, lowest: ${lowest}`
+        )
+
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
             ...field,
@@ -365,8 +360,7 @@ class AdventureService extends Water {
         field,
         summit_elevation: highest,
         base_elevation: lowest,
-        climb: totals[0],
-        descent: totals[1]
+        ...(totals && { climb: totals[0], descent: totals[1] })
       }
     } catch (error) {
       logger.error(error)
