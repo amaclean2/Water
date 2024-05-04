@@ -297,10 +297,6 @@ class AdventureService extends Water {
       })
   }
 
-  convertMetersToFeet(meters) {
-    return meters * 3.28084
-  }
-
   /**
    * @param {Object} params
    * @param {Object} params.field
@@ -314,8 +310,8 @@ class AdventureService extends Water {
     try {
       const elevations = JSON.parse(field.elevations)
 
-      const highest = Math.round(Math.max(elevations.map((e) => e[0])))
-      const lowest = Math.round(Math.min(elevations.map((e) => e[0])))
+      const highest = Math.round(Math.max(...elevations.map((e) => e[0])))
+      const lowest = Math.round(Math.min(...elevations.map((e) => e[0])))
 
       if (field.adventure_type === 'bike') {
         let lastElevation = elevations[0][0]
@@ -340,8 +336,8 @@ class AdventureService extends Water {
             ...field,
             summit_elevation: highest,
             base_elevation: lowest,
-            climb: this.convertMetersToFeet(totals[0]),
-            descent: this.convertMetersToFeet(-1 * totals[1])
+            climb: totals[0],
+            descent: totals[1]
           }
         })
       } else {
