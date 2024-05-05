@@ -33,7 +33,8 @@ const {
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
-  getGeneralFields
+  getGeneralFields,
+  pathAdventures
 } = require('./utils')
 const {
   failedInsertion,
@@ -181,7 +182,36 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject>}
    */
-  getAdventure({ adventureId, adventureType }) {
+  async getAdventure({ adventureId, adventureType }) {
+    const [[selectedAdventure]] = await this.sendQuery(
+      selectAdventureByIdGroup[adventureType],
+      [adventureId]
+    )
+
+    if (!selectedAdventure) {
+      return null
+    }
+
+    // convert the stringified path back to an object
+    // pathAdventures are any adventures that would have a path/elevations property
+    if (
+      pathAdventures.includes(adventureType) &&
+      selectedAdventure?.path?.length !== 0
+    ) {
+      // splitting the array around a point that's [0]. This point is there to split the
+      // path shown on the map with the points used to edit the path
+      const pathArr = JSON.parse(selectedAdventure.path)
+      const splitIdx = pathArr.findIndex((e) => e.length === 1)
+      if (splitIdx !== -1) {
+        selectedAdventure.path = pathArr.slice(0, splitIdx)
+        selectedAdventure.points = pathArr.slice(splitIdx + 1)
+      } else {
+        selectedAdventure.path = pathArr
+        selectedAdventure.points = []
+      }
+
+      selectedAdventure.elevations = JSON.parse(selectedAdventure.elevations)
+    }
     return this.sendQuery(selectAdventureByIdGroup[adventureType], [
       adventureId
     ])
@@ -191,7 +221,7 @@ class AdventureDataLayer extends DataLayer {
         }
 
         // convert the stringified path back to an object
-        if (['ski', 'hike', 'bike', 'skiApproach'].includes(adventureType)) {
+        if (pathAdventures.includes(adventureType)) {
           if (selectedAdventure?.path?.length !== 0) {
             selectedAdventure.path = JSON.parse(selectedAdventure.path)
             selectedAdventure.elevations = JSON.parse(

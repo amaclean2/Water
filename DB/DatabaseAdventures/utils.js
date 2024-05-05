@@ -247,6 +247,8 @@ const createSpecificProperties = (parsedAdventures) => {
   return specificProperties
 }
 
+const pathAdventures = ['ski', 'hike', 'bike', 'skiApproach']
+
 module.exports = {
   formatAdventureForGeoJSON,
   getSkiSpecificFields,
@@ -258,5 +260,6 @@ module.exports = {
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
-  adventureTemplate
+  adventureTemplate,
+  pathAdventures
 }
