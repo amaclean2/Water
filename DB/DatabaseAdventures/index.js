@@ -183,65 +183,47 @@ class AdventureDataLayer extends DataLayer {
    * @returns {Promise<AdventureObject>}
    */
   async getAdventure({ adventureId, adventureType }) {
-    const [[selectedAdventure]] = await this.sendQuery(
-      selectAdventureByIdGroup[adventureType],
-      [adventureId]
-    )
+    try {
+      const [[selectedAdventure]] = await this.sendQuery(
+        selectAdventureByIdGroup[adventureType],
+        [adventureId]
+      )
 
-    if (!selectedAdventure) {
-      return null
-    }
-
-    // convert the stringified path back to an object
-    // pathAdventures are any adventures that would have a path/elevations property
-    if (
-      pathAdventures.includes(adventureType) &&
-      selectedAdventure?.path?.length !== 0
-    ) {
-      // splitting the array around a point that's [0]. This point is there to split the
-      // path shown on the map with the points used to edit the path
-      const pathArr = JSON.parse(selectedAdventure.path)
-      const splitIdx = pathArr.findIndex((e) => e.length === 1)
-      if (splitIdx !== -1) {
-        selectedAdventure.path = pathArr.slice(0, splitIdx)
-        selectedAdventure.points = pathArr.slice(splitIdx + 1)
-      } else {
-        selectedAdventure.path = pathArr
-        selectedAdventure.points = []
+      if (!selectedAdventure) {
+        return null
       }
 
-      selectedAdventure.elevations = JSON.parse(selectedAdventure.elevations)
+      // convert the stringified path back to an object
+      // pathAdventures are any adventures that would have a path/elevations property
+      if (
+        pathAdventures.includes(adventureType) &&
+        selectedAdventure?.path?.length !== 0
+      ) {
+        // splitting the array around a point that's [0]. This point is there to split the
+        // path shown on the map with the points used to edit the path
+        const pathArr = JSON.parse(selectedAdventure.path)
+        const splitIdx = pathArr.findIndex((e) => e.length === 1)
+        if (splitIdx !== -1) {
+          selectedAdventure.path = pathArr.slice(0, splitIdx)
+          selectedAdventure.points = pathArr.slice(splitIdx + 1)
+        } else {
+          selectedAdventure.path = pathArr
+          selectedAdventure.points = []
+        }
+
+        selectedAdventure.elevations = JSON.parse(selectedAdventure.elevations)
+      } else if (!selectedAdventure.path) {
+        selectedAdventure.path = []
+      }
+
+      selectedAdventure.rating = `${Math.round(
+        selectedAdventure.rating.split(':')[0]
+      )}:${selectedAdventure.rating.split(':')[1]}`
+
+      return selectedAdventure
+    } catch (error) {
+      return failedQuery(error)
     }
-    return this.sendQuery(selectAdventureByIdGroup[adventureType], [
-      adventureId
-    ])
-      .then(([[selectedAdventure]]) => {
-        if (!selectedAdventure) {
-          return null
-        }
-
-        // convert the stringified path back to an object
-        if (pathAdventures.includes(adventureType)) {
-          if (selectedAdventure?.path?.length !== 0) {
-            selectedAdventure.path = JSON.parse(selectedAdventure.path)
-            selectedAdventure.elevations = JSON.parse(
-              selectedAdventure.elevations
-            )
-            selectedAdventure.cameraBounds = calculateCameraBounds(
-              selectedAdventure.path
-            )
-          } else if (!selectedAdventure?.path) {
-            selectedAdventure.path = []
-          }
-        }
-
-        selectedAdventure.rating = `${Math.round(
-          selectedAdventure.rating.split(':')[0]
-        )}:${selectedAdventure.rating.split(':')[1]}`
-
-        return selectedAdventure
-      })
-      .catch(failedQuery)
   }
 
   /**

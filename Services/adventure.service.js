@@ -397,6 +397,10 @@ class AdventureService extends Water {
           field
         })
 
+        if (['coordinates_lat', 'coordinates_lng'].includes(field.name)) {
+          this.adventureCache.clear()
+        }
+
         if (
           adventureKeywords !== false &&
           this.search.adventureKeywordLibrary.includes(field.name)
