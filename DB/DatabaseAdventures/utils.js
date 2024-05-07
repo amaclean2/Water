@@ -80,7 +80,9 @@ const getHikeSpecificFields = (adventure) => [
   adventure.base_elevation ?? 0,
   adventure.season ?? '',
   adventure.trail_path ?? '[]',
-  adventure.elevations ?? '[]'
+  adventure.elevations ?? '[]',
+  adventure.climb ?? 0,
+  adventure.descent ?? 0
 ]
 
 // all properties below must be in order of the database query

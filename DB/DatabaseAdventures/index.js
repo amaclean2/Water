@@ -358,7 +358,9 @@ class AdventureDataLayer extends DataLayer {
           field.elevations,
           field.summit_elevation,
           field.base_elevation,
-          field.adventure_id
+          field.adventure_id,
+          field.climb,
+          field.descent
         ])
       } else if (field.adventure_type === 'skiApproach') {
         await this.sendQuery(

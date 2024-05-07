@@ -14,7 +14,7 @@ const createNewSkiStatement =
 const createNewClimbStatement =
   'INSERT INTO climb (pitches, protection, climb_type, light_times, season, approach, first_ascent) VALUES ?'
 const createNewHikeStatement =
-  'INSERT INTO hike (summit_elevation, base_elevation, season, trail_path, elevations) VALUES ?'
+  'INSERT INTO hike (summit_elevation, base_elevation, season, trail_path, elevations, climb, descent) VALUES ?'
 const createNewBikeStatement =
   'INSERT INTO bike (summit_elevation, base_elevation, season, trail_path, elevations, climb, descent) VALUES ?'
 const createNewApproachStatement =

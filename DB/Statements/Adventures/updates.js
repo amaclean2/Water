@@ -60,7 +60,7 @@ const updateAdventureStatements = {
   ski_trail_path:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.trail_path = ?, s.elevations = ?, s.summit_elevation = ?, s.base_elevation = ? WHERE a.id = ?',
   hike_trail_path:
-    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = ?, h.elevations = ?, h.summit_elevation = ?, h.base_elevation = ? WHERE a.id = ?',
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = ?, h.elevations = ?, h.summit_elevation = ?, h.base_elevation = ?, h.climb = ?, h.descent = ? WHERE a.id = ?',
   bike_trail_path:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = ?, b.elevations = ?, b.summit_elevation = ?, b.base_elevation = ?, b.climb = ?, b.descent = ? WHERE a.id = ?',
   ski_approach_trail_path:
@@ -69,9 +69,13 @@ const updateAdventureStatements = {
   remove_hike_trail_path: `UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.trail_path = "[]", h.elevations = "[]" WHERE a.id = ?`,
   remove_bike_trail_path: `UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_id = b.id SET b.trail_path = "[]", b.elevations = "[]" WHERE a.id = ?`,
   remove_ski_approach_trail_path: `UPDATE ski_approach AS sa INNER JOIN adventures AS a ON a.ski_approach_id = sa.id SET sa.trail_path = "[]", sa.elevations = "[]" WHERE a.id = ?`,
-  climb:
+  hike_climb:
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.climb = ? WHERE a.id = ?',
+  hike_descent:
+    'UPDATE hike AS h INNER JOIN adventures AS a ON a.adventure_hike_id = h.id SET h.descent = ? WHERE a.id = ?',
+  bike_climb:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_Id = b.id SET b.climb = ? WHERE a.id = ?',
-  descent:
+  bike_descent:
     'UPDATE bike AS b INNER JOIN adventures AS a ON a.adventure_bike_Id = b.id SET b.descent = ? WHERE a.id = ?'
 }
 

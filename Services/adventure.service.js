@@ -313,7 +313,7 @@ class AdventureService extends Water {
       const highest = Math.round(Math.max(...elevations.map((e) => e[0])))
       const lowest = Math.round(Math.min(...elevations.map((e) => e[0])))
 
-      if (field.adventure_type === 'bike') {
+      if (['bike', 'hike'].includes(field.adventure_type)) {
         let lastElevation = elevations[0][0]
         let totals = [0, 0]
         // calculating total elevation gain and loss
