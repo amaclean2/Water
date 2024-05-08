@@ -235,22 +235,24 @@ class AdventureDataLayer extends DataLayer {
    * @param {number} params.count
    * @returns {Promise<Object[]>} | returns a promise containing an array of adventure objects that are closest to the given coordinates
    */
-  getClosestAdventuresFromDB({ adventureType, coordinates, count }) {
-    logger.info(
-      JSON.stringify({
-        centerCoordinatesOfAdventures: coordinates,
-        adventureType
-      })
-    )
-
-    return this.sendQuery(getCloseAdventures, [
-      adventureType,
-      coordinates.lat,
-      coordinates.lng,
-      count
-    ])
-      .then(([results]) => results)
-      .catch(failedQuery)
+  async getClosestAdventuresFromDB({ adventureType, coordinates, count }) {
+    try {
+      logger.info(
+        JSON.stringify({
+          centerCoordinatesOfAdventures: coordinates,
+          adventureType
+        })
+      )
+      const [results] = await this.sendQuery(getCloseAdventures, [
+        adventureType,
+        coordinates.lat,
+        coordinates.lng,
+        count
+      ])
+      return results
+    } catch (error) {
+      return failedQuery(error)
+    }
   }
 
   /**
@@ -358,9 +360,9 @@ class AdventureDataLayer extends DataLayer {
           field.elevations,
           field.summit_elevation,
           field.base_elevation,
-          field.adventure_id,
           field.climb,
-          field.descent
+          field.descent,
+          field.adventure_id
         ])
       } else if (field.adventure_type === 'skiApproach') {
         await this.sendQuery(
