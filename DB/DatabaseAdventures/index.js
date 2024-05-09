@@ -211,7 +211,9 @@ class AdventureDataLayer extends DataLayer {
           selectedAdventure.points = []
         }
 
-        selectedAdventure.elevations = JSON.parse(selectedAdventure.elevations)
+        selectedAdventure.elevations = JSON.parse(
+          selectedAdventure.elevations ?? '[]'
+        )
       } else if (!selectedAdventure.path) {
         selectedAdventure.path = []
       }

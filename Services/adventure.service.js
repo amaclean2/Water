@@ -1,7 +1,6 @@
 const Water = require('.')
 const SearchService = require('./search.service')
 const { Cache } = require('memory-cache')
-const { updateAdventureCache } = require('./utils/caching')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
 
@@ -103,27 +102,18 @@ class AdventureService extends Water {
 
     logger.info('adventure object built successfully')
 
-    // we need to rebuild the cached adventure list. Since we can do this with data we already have,
-    // it doesn't require another round trip to the database
-    const updatedCacheObject = updateAdventureCache({
-      cacheObject: {
-        ...this.adventureCache.get(adventureObject.adventure_type)
-      },
-      adventureObject: { ...adventureObject, id: adventureId }
-    })
-
-    this.adventureCache.put(
-      adventureObject.adventure_type,
-      updatedCacheObject,
-      CACHE_TIMEOUT
-    )
+    // we need to clear the cache since it's now obsolete
+    this.adventureCache.del(adventureObject.adventure_type)
 
     this.search.saveAdventureKeywords({
       searchableFields: adventure,
       adventureId
     })
 
-    return { adventure, adventureList: updatedCacheObject }
+    return {
+      adventure,
+      adventureList: await this.getAdventureList(adventureObject.adventure_type)
+    }
   }
 
   /**
@@ -164,17 +154,18 @@ class AdventureService extends Water {
     try {
       // if there is already a cached adventure list, just return that
       const cachedResults = this.adventureCache.get(adventureType)
+      let approachResults = null
+      if (adventureType === 'ski')
+        approachResults = this.adventureCache.get('skiApproach')
 
-      if (cachedResults) {
-        if (adventureType === 'ski') {
-          return {
-            ski: cachedResults,
-            skiApproach: this.adventureCache.get('skiApproach')
-          }
-        }
-
+      if (adventureType !== 'ski' && cachedResults) {
         return {
           [adventureType]: cachedResults
+        }
+      } else if (cachedResults && approachResults !== null) {
+        return {
+          ski: cachedResults,
+          skiApproach: approachResults
         }
       }
 
@@ -357,6 +348,9 @@ class AdventureService extends Water {
           }
         })
 
+        if (field.adventure_type === 'skiApproach')
+          this.adventureCache.del(field.adventure_type)
+
         return {
           field,
           summit_elevation: highest,
@@ -397,8 +391,12 @@ class AdventureService extends Water {
           field
         })
 
+        let allAdventures = null
         if (['coordinates_lat', 'coordinates_lng'].includes(field.name)) {
           this.adventureCache.clear()
+          allAdventures = await this.getAdventureList({
+            adventureType: field.adventure_type
+          })
         }
 
         if (
@@ -414,7 +412,10 @@ class AdventureService extends Water {
 
         logger.info(`database update finished on ${field.adventure_id}`)
 
-        return field
+        return {
+          field,
+          ...(allAdventures !== null && { all_adventures: allAdventures })
+        }
       }
     } catch (error) {
       logger.error(error)

@@ -17,6 +17,7 @@ const formatAdventureForGeoJSON = (adventure) => {
   if (adventure.adventure_type === 'skiApproach') {
     newAdventure = {
       type: 'Feature',
+      id: adventure.id,
       geometry: {
         type: 'LineString',
         coordinates: JSON.parse(adventure.trail_path ?? '[]')
@@ -31,6 +32,7 @@ const formatAdventureForGeoJSON = (adventure) => {
   } else {
     newAdventure = {
       type: 'Feature',
+      id: adventure.id,
       geometry: {
         type: 'Point',
         coordinates: [adventure.coordinates_lng, adventure.coordinates_lat]
