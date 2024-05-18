@@ -70,7 +70,7 @@ class AdventureDataLayer extends DataLayer {
 
       logger.info(`specific information saved for new adventure`)
 
-      const fields = await getGeneralFields({
+      const fields = getGeneralFields({
         ...adventure,
         [adventureProperties.specificIdType]: specificId
       })
@@ -465,10 +465,16 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.search
    * @returns {Promise<AdventureObject[]>} a list of adventures matching the given string
    */
-  searchDatabaseForAdventureString({ search }) {
-    return this.sendQuery(searchAdventureStatement, [`%${search}%`])
-      .then(([allResults]) => allResults)
-      .catch(failedQuery)
+  async searchDatabaseForAdventureString({ search }) {
+    try {
+      const [allResults] = await this.sendQuery(searchAdventureStatement, [
+        `%${search}%`
+      ])
+
+      return allResults
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -506,12 +512,15 @@ class AdventureDataLayer extends DataLayer {
    * @param {number} params.adventureId
    * @returns {Promise<string[]>} | a list of urls attributed to that adventure
    */
-  getAdventureImages({ adventureId }) {
-    return this.sendQuery(getAdventurePicturesStatement, [adventureId])
-      .then(([results]) =>
-        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
-      )
-      .catch(failedQuery)
+  async getAdventureImages({ adventureId }) {
+    try {
+      const [results] = await this.sendQuery(getAdventurePicturesStatement, [
+        adventureId
+      ])
+      return results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -521,20 +530,21 @@ class AdventureDataLayer extends DataLayer {
    * @param {number} params.adventureId
    * @returns {Promise<string>}
    */
-  saveImageToAdventure({ url, userId, adventureId }) {
-    return this.sendQuery(createAdventurePictureStatement, [
-      url,
-      userId,
-      adventureId
-    ])
-      .then(([results]) => {
-        if (Object.keys(results).length) {
-          return 'adventure image saved'
-        } else {
-          throw 'saving adventure image failed'
-        }
-      })
-      .catch(failedInsertion)
+  async saveImageToAdventure({ url, userId, adventureId }) {
+    try {
+      const [results] = await this.sendQuery(createAdventurePictureStatement, [
+        url,
+        userId,
+        adventureId
+      ])
+      if (Object.keys(results)?.length) {
+        return 'adventure image saved'
+      } else {
+        throw 'saving adventure image failed'
+      }
+    } catch (error) {
+      throw failedInsertion(error)
+    }
   }
 }
 
