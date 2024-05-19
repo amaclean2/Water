@@ -11,6 +11,7 @@ const {
   createStatements,
   deleteStatements
 } = require('./DB/Statements/testStatements')
+const ZoneService = require('./Services/zone.service')
 
 /**
  * @class
@@ -54,6 +55,7 @@ class SundayService {
 
     this.userService = new UserService(this.sendQuery, jwtSecret)
     this.adventureService = new AdventureService(this.sendQuery, jwtSecret)
+    this.zoneService = new ZoneService(this.sendQuery, jwtSecret)
     this.passwordService = new PasswordService(this.sendQuery, jwtSecret)
     this.validationService = new Water(this.sendQuery, jwtSecret)
     this.searchService = new SearchService(this.sendQuery, jwtSecret)

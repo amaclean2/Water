@@ -13,6 +13,17 @@ class ZoneService extends Water {
   }
 
   /**
+   * @typedef {Object} NewZone
+   * @property {string} zoneName
+   * @property {string} adventureType
+   * @property {number} coordinatesLat
+   * @property {number} coordinatesLng
+   * @property {number} creatorId
+   * @property {string} nearestCity
+   * @property {number} public
+   */
+
+  /**
    * @param {Object} params
    * @param {string} params.adventureType
    * @returns {Promise<Object>} an object containing an array of adventures with the key of the adventure type
@@ -53,6 +64,27 @@ class ZoneService extends Water {
       }
 
       return zoneData
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {NewZone} params.zoneParams
+   * @returns {Promise<NewZone>}
+   */
+  async createNewZone({ zoneParams }) {
+    try {
+      const newZone = {
+        ...(await this.zoneDB.createZone({ newZone: zoneParams })),
+        adventures: [],
+        zones: [],
+        images: []
+      }
+
+      return newZone
     } catch (error) {
       logger.info(error)
       throw error
