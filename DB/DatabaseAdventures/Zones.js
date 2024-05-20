@@ -5,11 +5,13 @@ const {
   getZoneSubzoneQuery,
   getAllZonesOfATypeQuery,
   createZoneQuery,
-  editZoneFieldQuery,
   addAdventureToZoneQuery,
   removeAdventureFromZoneQuery,
   addZoneToZoneQuery,
-  removeZoneFromZoneQuery
+  removeZoneFromZoneQuery,
+  editZoneFieldQueries,
+  intersectingAdventureQuery,
+  intersectingZoneQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -75,7 +77,49 @@ class ZoneDataLayer extends DataLayer {
       const [zonesPerType] = await this.sendQuery(getAllZonesOfATypeQuery, [
         adventureType
       ])
+
+      logger.info(`${zonesPerType.length} zones returned`)
+
       return zonesPerType
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  async getAdventureZoneMatch({ adventureId, zoneId }) {
+    try {
+      const [[results]] = await this.sendQuery(intersectingAdventureQuery, [
+        adventureId,
+        zoneId
+      ])
+
+      logger.info(
+        `adventure type is ${results.adventure_type} and zone type is ${results.zone_adventure_type}`
+      )
+
+      // ski approach adventures can go in the ski zone
+      return (
+        results.zone_adventure_type === results.adventure_type ||
+        (results.zone_adventure_type === 'ski' &&
+          results.adventure_type === 'skiApproach')
+      )
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  async getZoneZoneMatch({ parentZoneId, childZoneId }) {
+    try {
+      const [results] = await this.sendQuery(intersectingZoneQuery, [
+        parentZoneId,
+        childZoneId
+      ])
+
+      logger.info(
+        `the results of the zone match query have length ${results.length}`
+      )
+
+      return results.length === 1
     } catch (error) {
       throw failedQuery(error)
     }
@@ -95,20 +139,27 @@ class ZoneDataLayer extends DataLayer {
         coordinatesLng,
         creatorId,
         nearestCity,
-        public
+        public: isPublic
       } = newZone
-      const [[insertId]] = await this.sendQuery(createZoneQuery, [
-        [
-          [
-            zoneName,
-            adventureType,
-            coordinatesLat,
-            coordinatesLng,
-            creatorId,
-            nearestCity,
-            public
-          ]
-        ]
+
+      const queryParams = {
+        zoneName,
+        adventureType,
+        coordinatesLat,
+        coordinatesLng,
+        creatorId,
+        nearestCity,
+        isPublic
+      }
+
+      for (let param in queryParams) {
+        if (queryParams[param] === undefined) {
+          throw `${param} required to create a new zone. ${queryParams[param]} supplied`
+        }
+      }
+
+      const [{ insertId }] = await this.sendQuery(createZoneQuery, [
+        [Object.values(queryParams)]
       ])
 
       return { ...newZone, id: insertId }
@@ -126,11 +177,9 @@ class ZoneDataLayer extends DataLayer {
    */
   async editZoneField({ zoneProperty, zoneValue, zoneId }) {
     try {
-      const something = await this.sendQuery(editZoneFieldQuery, [
-        zoneProperty,
-        zoneValue,
-        zoneId
-      ])
+      const editQuery = editZoneFieldQueries[zoneProperty]
+
+      const something = await this.sendQuery(editQuery, [zoneValue, zoneId])
       return something
     } catch (error) {
       throw failedUpdate(error)
@@ -146,7 +195,7 @@ class ZoneDataLayer extends DataLayer {
   async addAdventureToZone({ adventureId, zoneId }) {
     try {
       const something = await this.sendQuery(addAdventureToZoneQuery, [
-        [[adventureId, zoneId]]
+        [[adventureId, zoneId, 'adventure']]
       ])
       return something
     } catch (error) {
@@ -179,7 +228,7 @@ class ZoneDataLayer extends DataLayer {
   async addChildZoneToZone({ childZoneId, parentZoneId }) {
     try {
       const something = await this.sendQuery(addZoneToZoneQuery, [
-        [[childZoneId, parentZoneId]]
+        [[childZoneId, parentZoneId, 'zone']]
       ])
       return something
     } catch (error) {

@@ -1,6 +1,7 @@
 const { Cache } = require('memory-cache')
 
 const Water = require('.')
+const SearchService = require('./search.service')
 const logger = require('../Config/logger')
 
 const CACHE_TIMEOUT = 1000 * 360
@@ -37,7 +38,7 @@ class ZoneService extends Water {
           [adventureType]: cachedZones
         }
 
-      const zones = this.zoneDB.getZonesPerType({ adventureType })
+      const zones = await this.zoneDB.getZonesPerType({ adventureType })
 
       this.zoneCache.put(adventureType, zones, CACHE_TIMEOUT)
 
@@ -72,6 +73,26 @@ class ZoneService extends Water {
 
   /**
    * @param {Object} params
+   * @param {number} params.adventureId
+   * @param {number} params.zoneId
+   * @returns {Promise<boolean>} true if they match, false otherwise
+   */
+  async getMatchingAdventures({ adventureId, zoneId }) {
+    return await this.zoneDB.getAdventureZoneMatch({ adventureId, zoneId })
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.parentZoneId
+   * @param {number} params.childZoneId
+   * @returns {Promise<boolean>} true if they match, false otherwise
+   */
+  async getMatchingZones({ parentZoneId, childZoneId }) {
+    return await this.zoneDB.getZoneZoneMatch({ parentZoneId, childZoneId })
+  }
+
+  /**
+   * @param {Object} params
    * @param {NewZone} params.zoneParams
    * @returns {Promise<NewZone>}
    */
@@ -83,6 +104,8 @@ class ZoneService extends Water {
         zones: [],
         images: []
       }
+
+      this.zoneCache.clear()
 
       return newZone
     } catch (error) {
