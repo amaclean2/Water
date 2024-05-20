@@ -17,6 +17,7 @@ WHERE z.id = ?`
 
 const getAllZonesOfATypeQuery = `
 SELECT
+id,
 zone_name,
 adventure_type,
 coordinates_lat,
@@ -41,6 +42,7 @@ WHERE zi.interaction_type = 'adventure' AND z.id = ? AND a.public = 1`
 // Get zone first layer subzones
 const getZoneSubzoneQuery = `
 SELECT
+z2.id AS zone_id,
 z2.adventure_type,
 z2.zone_name,
 z2.id AS zone_child_id,
@@ -52,9 +54,13 @@ INNER JOIN zone_interactions AS zi ON zi.parent_id = z.id
 INNER JOIN zones AS z2 ON zi.zone_child_id = z2.id
 WHERE zi.interaction_type = 'zone' AND z.id = ? AND z2.public = 1`
 
+// Get any parent of a zone
+const getZoneParentQuery =
+  'SELECT parent_id AS id FROM zone_interactions WHERE zone_child_id = ?'
+
 // Get the intersecting adventure types between an adventure and a zone
 const intersectingAdventureQuery =
-  'SELECT z.adventure_type AS zone_adventure_type, a.adventure_type AS adventure_type FROM zones Z z INNER JOIN adventures AS a ON a.id = ? WHERE z.id = ?'
+  'SELECT z.adventure_type AS zone_adventure_type, a.adventure_type AS adventure_type FROM zones AS z INNER JOIN adventures AS a ON a.id = ? WHERE z.id = ?'
 
 // Get the insersecting zone types between two zones
 const intersectingZoneQuery =
@@ -74,11 +80,11 @@ const addZoneToZoneQuery =
 
 // Remove an adventure from a zone
 const removeAdventureFromZoneQuery =
-  'DELETE FROM zone_interactions WHERE adventure_child_id = ?'
+  'DELETE FROM zone_interactions WHERE adventure_child_id IN ?'
 
 // Remove a zone from a zone
 const removeZoneFromZoneQuery =
-  'DELETE FROM zone_interactions WHERE zone_child_id = ?'
+  'DELETE FROM zone_interactions WHERE zone_child_id IN ?'
 
 // Edit a zone field
 const editZoneFieldQueries = {
@@ -91,13 +97,17 @@ const editZoneFieldQueries = {
 }
 
 // Delete a zone (probably shouldn't do this will-nilly)
-const deleteZoneQuery = ''
+const deleteZoneQuery = 'DELETE FROM zones WHERE id = ?'
+
+const deleteZoneInteractionsQuery =
+  'DELETE FROM zone_interactions WHERE parent_id = ? OR zone_child_id = ?'
 
 module.exports = {
   getZoneInformationQuery,
   getAllZonesOfATypeQuery,
   getZoneAdventuresQuery,
   getZoneSubzoneQuery,
+  getZoneParentQuery,
   intersectingAdventureQuery,
   intersectingZoneQuery,
   createZoneQuery,
@@ -106,5 +116,6 @@ module.exports = {
   removeAdventureFromZoneQuery,
   removeZoneFromZoneQuery,
   editZoneFieldQueries,
-  deleteZoneQuery
+  deleteZoneQuery,
+  deleteZoneInteractionsQuery
 }

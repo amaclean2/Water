@@ -1,4 +1,5 @@
 const DataLayer = require('..')
+const logger = require('../../Config/logger')
 const {
   getZoneInformationQuery,
   getZoneAdventuresQuery,
@@ -11,7 +12,9 @@ const {
   removeZoneFromZoneQuery,
   editZoneFieldQueries,
   intersectingAdventureQuery,
-  intersectingZoneQuery
+  intersectingZoneQuery,
+  deleteZoneQuery,
+  getZoneParentQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -125,6 +128,20 @@ class ZoneDataLayer extends DataLayer {
     }
   }
 
+  async getZoneParent({ zoneId }) {
+    try {
+      const [results] = await this.sendQuery(getZoneParentQuery, [zoneId])
+
+      if (results.length) {
+        return results[0].parent_id
+      } else {
+        return null
+      }
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
   /**
    * @param {Object} params
    * @param {Object} params.newZone
@@ -177,6 +194,7 @@ class ZoneDataLayer extends DataLayer {
    */
   async editZoneField({ zoneProperty, zoneValue, zoneId }) {
     try {
+      logger.info(`zone property: ${zoneProperty}`)
       const editQuery = editZoneFieldQueries[zoneProperty]
 
       const something = await this.sendQuery(editQuery, [zoneValue, zoneId])
@@ -188,14 +206,14 @@ class ZoneDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.adventureId
+   * @param {number[]} params.adventureIds
    * @param {number} params.zoneId
    * @returns {Promise<void>} nothing useful
    */
-  async addAdventureToZone({ adventureId, zoneId }) {
+  async addAdventureToZone({ adventureIds, zoneId }) {
     try {
       const something = await this.sendQuery(addAdventureToZoneQuery, [
-        [[adventureId, zoneId, 'adventure']]
+        adventureIds.map((ad) => [ad, zoneId, 'adventure'])
       ])
       return something
     } catch (error) {
@@ -205,13 +223,13 @@ class ZoneDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.adventureId
+   * @param {number[]} params.adventureIds
    * @returns {Promise<void>} nothing useful
    */
-  async removeAdventureFromZone({ adventureId }) {
+  async removeAdventureFromZone({ adventureIds }) {
     try {
       const something = await this.sendQuery(removeAdventureFromZoneQuery, [
-        adventureId
+        adventureIds.map((id) => [id])
       ])
       return something
     } catch (error) {
@@ -221,14 +239,14 @@ class ZoneDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.childZoneId
+   * @param {number[]} params.childZoneIds
    * @param {number} params.parentZoneId
    * @returns {Promise<void>} nothing useful
    */
-  async addChildZoneToZone({ childZoneId, parentZoneId }) {
+  async addChildZoneToZone({ childZoneIds, parentZoneId }) {
     try {
       const something = await this.sendQuery(addZoneToZoneQuery, [
-        [[childZoneId, parentZoneId, 'zone']]
+        childZoneIds.map((cz) => [cz, parentZoneId, 'zone'])
       ])
       return something
     } catch (error) {
@@ -238,13 +256,13 @@ class ZoneDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.childZoneId
+   * @param {number[]} params.childZoneIds
    * @returns {Promise<void>} nothing useful
    */
-  async removeChildZoneFromZone({ childZoneId }) {
+  async removeChildZoneFromZone({ childZoneIds }) {
     try {
       const something = await this.sendQuery(removeZoneFromZoneQuery, [
-        childZoneId
+        childZoneIds.map((id) => [id])
       ])
       return something
     } catch (error) {
@@ -253,10 +271,13 @@ class ZoneDataLayer extends DataLayer {
   }
 
   async deleteZone({ zoneId }) {
-    console.log(
-      "This is dangerous if not done right. I'm not going to implement this right now"
-    )
-    return false
+    try {
+      await this.sendQuery(deleteZoneInteractionsQuery, [zoneId, zoneId])
+      await this.sendQuery(deleteZoneQuery, [zoneId])
+      return true
+    } catch (error) {
+      throw failedDeletion(error)
+    }
   }
 }
 

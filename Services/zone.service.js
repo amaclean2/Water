@@ -122,7 +122,10 @@ class ZoneService extends Water {
    */
   async addAdventure({ zoneId, adventureId }) {
     try {
-      await this.zoneDB.addAdventureToZone({ adventureId, zoneId })
+      await this.zoneDB.addAdventureToZone({
+        adventureIds: [adventureId],
+        zoneId
+      })
       return await this.getZoneData({ zoneId })
     } catch (error) {
       logger.info(error)
@@ -138,7 +141,7 @@ class ZoneService extends Water {
    */
   async removeAdventure({ adventureId, zoneId }) {
     try {
-      await this.zoneDB.removeAdventureFromZone({ adventureId })
+      await this.zoneDB.removeAdventureFromZone({ adventureIds: [adventureId] })
       return await this.getZoneData({ zoneId })
     } catch (error) {
       logger.info(error)
@@ -149,13 +152,16 @@ class ZoneService extends Water {
   /**
    * @param {Object} params
    * @param {number} params.newZoneId
-   * @param {number} params.adventureId
+   * @param {number[]} params.adventureIds
    * @returns {Promise<Object>} an adventure object of the new adventure zone
    */
   async moveAdventure({ adventureId, newZoneId }) {
     try {
-      await this.zoneDB.removeAdventureFromZone({ adventureId })
-      await this.zoneDB.addAdventureToZone({ adventureId, zoneId: newZoneId })
+      await this.zoneDB.removeAdventureFromZone({ adventureIds: [adventureId] })
+      await this.zoneDB.addAdventureToZone({
+        adventureIds: [adventureId],
+        zoneId: newZoneId
+      })
       return await this.getZoneData({ zoneId: newZoneId })
     } catch (error) {
       logger.info(error)
@@ -171,7 +177,10 @@ class ZoneService extends Water {
    */
   async addSubzone({ parentZoneId, childZoneId }) {
     try {
-      await this.zoneDB.addChildZoneToZone({ childZoneId, parentZoneId })
+      await this.zoneDB.addChildZoneToZone({
+        childZoneIds: [childZoneId],
+        parentZoneId
+      })
       return await this.getZoneData({ parentZoneId })
     } catch (error) {
       logger.info(error)
@@ -187,7 +196,7 @@ class ZoneService extends Water {
    */
   async removeSubzone({ childZoneId, parentZoneId }) {
     try {
-      await this.zoneDB.removeChildZoneFromZone({ childZoneId })
+      await this.zoneDB.removeChildZoneFromZone({ childZoneIds: [childZoneId] })
       return await this.getZoneData({ parentZoneId })
     } catch (error) {
       logger.info(error)
@@ -203,9 +212,9 @@ class ZoneService extends Water {
    */
   async moveSubZone({ newParentZoneId, childZoneId }) {
     try {
-      await this.zoneDB.removeChildZoneFromZone({ childZoneId })
+      await this.zoneDB.removeChildZoneFromZone({ childZoneIds: [childZoneId] })
       await this.zoneDB.addChildZoneToZone({
-        childZoneId,
+        childZoneIds: [childZoneId],
         parentZoneId: newParentZoneId
       })
       return await this.getZoneData({ zoneId: newParentZoneId })
@@ -235,9 +244,47 @@ class ZoneService extends Water {
     }
   }
 
+  /**
+   * @param {Object} params
+   * @param {number} params.zoneId
+   * @returns {Promise<Object>} an object containing the zones child adventures and zones if the user wants to do anything with them since this information needed to be fetched anyways
+   */
   async deleteZone({ zoneId }) {
-    console.log('Not yet set up to delete zones')
-    return false
+    // If the zone has a parent, move all children to the parent otherwise just delete the zone.
+    // The relationships will die and the children will be free
+    const zoneParent = await this.zoneDB.getZoneParent({ zoneId })
+    const childAdventures = await this.zoneDB.getZoneAdventures({ zoneId })
+    const childZones = await this.zoneDB.getZoneSubzones({ zoneId })
+
+    if (zoneParent) {
+      if (childAdventures.length) {
+        await this.zoneDB.removeAdventureFromZone({
+          adventureIds: childAdventures.map(({ adventure_id }) => adventure_id)
+        })
+        await this.zoneDB.addAdventureToZone({
+          adventureIds: childAdventures.map(({ adventure_id }) => adventure_id),
+          zoneId: zoneParent.id
+        })
+      }
+
+      if (childZones.length) {
+        await this.zoneDB.removeChildZoneFromZone({
+          childZoneIds: childZones.map(({ zone_id }) => zone_id)
+        })
+        await this.zoneDB.addChildZoneToZone({
+          childZoneIds: childZones.map(({ zone_id }) => zone_id),
+          parentZoneId: zoneParent.id
+        })
+      }
+    }
+
+    await this.zoneDB.deleteZone({ zoneId })
+    this.zoneCache.clear()
+
+    return {
+      child_adventures: childAdventures,
+      child_zones: childZones
+    }
   }
 }
 
