@@ -264,6 +264,10 @@ class AdventureDataLayer extends DataLayer {
    */
   async databaseGetTypedAdventures({ adventureType }) {
     try {
+      if (!adventureType) {
+        throw 'adventureType parameter required'
+      }
+
       // fetch all the adventures that pertain to that type from the database
       const [results] = await this.sendQuery(selectAdventuresStatement, [
         adventureType

@@ -14,7 +14,8 @@ const {
   intersectingAdventureQuery,
   intersectingZoneQuery,
   deleteZoneQuery,
-  getZoneParentQuery
+  getZoneParentQuery,
+  deleteZoneInteractionsQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -133,7 +134,7 @@ class ZoneDataLayer extends DataLayer {
       const [results] = await this.sendQuery(getZoneParentQuery, [zoneId])
 
       if (results.length) {
-        return results[0].parent_id
+        return results[0].id
       } else {
         return null
       }
@@ -229,7 +230,7 @@ class ZoneDataLayer extends DataLayer {
   async removeAdventureFromZone({ adventureIds }) {
     try {
       const something = await this.sendQuery(removeAdventureFromZoneQuery, [
-        adventureIds.map((id) => [id])
+        [adventureIds]
       ])
       return something
     } catch (error) {
@@ -262,7 +263,7 @@ class ZoneDataLayer extends DataLayer {
   async removeChildZoneFromZone({ childZoneIds }) {
     try {
       const something = await this.sendQuery(removeZoneFromZoneQuery, [
-        childZoneIds.map((id) => [id])
+        [childZoneIds]
       ])
       return something
     } catch (error) {

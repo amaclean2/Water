@@ -112,7 +112,9 @@ class AdventureService extends Water {
 
     return {
       adventure,
-      adventureList: await this.getAdventureList(adventureObject.adventure_type)
+      adventureList: await this.getAdventureList({
+        adventureType: adventureObject.adventure_type
+      })
     }
   }
 

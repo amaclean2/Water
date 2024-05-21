@@ -181,7 +181,7 @@ class ZoneService extends Water {
         childZoneIds: [childZoneId],
         parentZoneId
       })
-      return await this.getZoneData({ parentZoneId })
+      return await this.getZoneData({ zoneId: parentZoneId })
     } catch (error) {
       logger.info(error)
       throw error
@@ -197,7 +197,7 @@ class ZoneService extends Water {
   async removeSubzone({ childZoneId, parentZoneId }) {
     try {
       await this.zoneDB.removeChildZoneFromZone({ childZoneIds: [childZoneId] })
-      return await this.getZoneData({ parentZoneId })
+      return await this.getZoneData({ zoneId: parentZoneId })
     } catch (error) {
       logger.info(error)
       throw error
@@ -252,18 +252,22 @@ class ZoneService extends Water {
   async deleteZone({ zoneId }) {
     // If the zone has a parent, move all children to the parent otherwise just delete the zone.
     // The relationships will die and the children will be free
-    const zoneParent = await this.zoneDB.getZoneParent({ zoneId })
+    const zoneParentId = await this.zoneDB.getZoneParent({ zoneId })
     const childAdventures = await this.zoneDB.getZoneAdventures({ zoneId })
     const childZones = await this.zoneDB.getZoneSubzones({ zoneId })
 
-    if (zoneParent) {
+    logger.info(
+      `${childAdventures.length} child adventures found. ${childZones.length} child zones found.`
+    )
+
+    if (zoneParentId) {
       if (childAdventures.length) {
         await this.zoneDB.removeAdventureFromZone({
           adventureIds: childAdventures.map(({ adventure_id }) => adventure_id)
         })
         await this.zoneDB.addAdventureToZone({
           adventureIds: childAdventures.map(({ adventure_id }) => adventure_id),
-          zoneId: zoneParent.id
+          zoneId: zoneParentId
         })
       }
 
@@ -273,7 +277,7 @@ class ZoneService extends Water {
         })
         await this.zoneDB.addChildZoneToZone({
           childZoneIds: childZones.map(({ zone_id }) => zone_id),
-          parentZoneId: zoneParent.id
+          parentZoneId: zoneParentId
         })
       }
     }
