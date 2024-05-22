@@ -15,7 +15,8 @@ const {
   intersectingZoneQuery,
   deleteZoneQuery,
   getZoneParentQuery,
-  deleteZoneInteractionsQuery
+  deleteZoneInteractionsQuery,
+  getCloseZonesQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -124,6 +125,38 @@ class ZoneDataLayer extends DataLayer {
       )
 
       return results.length === 1
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {number} params.coordinatesLat
+   * @param {number} params.coordinatesLng
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} | a list of zones that are close to the specified coordinates lat and lng
+   */
+  async getZonesByDistance({
+    adventureType,
+    coordinatesLat,
+    coordinatesLng,
+    count
+  }) {
+    try {
+      logger.info(
+        `fetching zones close to {cLa: ${coordinatesLat}, cLo: ${coordinatesLng}} for adventure type: ${adventureType}`
+      )
+
+      const [results] = await this.sendQuery(getCloseZonesQuery, [
+        adventureType,
+        coordinatesLat,
+        coordinatesLng,
+        count
+      ])
+
+      return results
     } catch (error) {
       throw failedQuery(error)
     }

@@ -78,8 +78,16 @@ const getCloseAdventures = `SELECT
 const getAdventureRatingAndDifficulty =
   'SELECT rating, difficulty, id AS adventure_id, adventure_type FROM adventures WHERE id = ?'
 
-const searchAdventureStatement =
-  'SELECT a.adventure_name, a.id, a.adventure_type, a.nearest_city FROM adventures AS a INNER JOIN searchable_adventures AS sa ON sa.adventure_id = a.id WHERE sa.searchable_text LIKE ?'
+const searchAdventureStatement = `
+SELECT
+a.adventure_name,
+a.id,
+a.adventure_type,
+a.nearest_city
+FROM adventures AS a
+INNER JOIN searchable_adventures AS sa ON sa.adventure_id = a.id
+WHERE sa.searchable_text LIKE ?
+`
 
 const getKeywordsStatement =
   'SELECT a.adventure_name, a.adventure_type, a.bio, CONCAT(u.first_name, u.last_name) AS creator_name, a.nearest_city, a.coordinates_lat, a.coordinates_lng, a.public FROM adventures AS a INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'

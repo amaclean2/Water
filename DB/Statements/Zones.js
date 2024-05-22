@@ -54,6 +54,29 @@ INNER JOIN zone_interactions AS zi ON zi.parent_id = z.id
 INNER JOIN zones AS z2 ON zi.zone_child_id = z2.id
 WHERE zi.interaction_type = 'zone' AND z.id = ? AND z2.public = 1`
 
+// Get zones by distance
+const getCloseZonesQuery = `SELECT
+  id AS zone_id,
+  zone_name,
+  adventure_type,
+  nearest_city,
+  bio
+  FROM zones
+  WHERE public = 1 AND adventure_type = ?
+  ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
+
+// Search zones (needs new table searchable_zones)
+const searchZoneQuery = `
+  SELECT
+  z.zone_name,
+  z.id,
+  z.adventure_type,
+  z.nearest_city
+  FROM zones AS z
+  INNER JOIN searchable_zones AS sz ON sz.zone_id = z.id
+  WHERE sz.searchable_text LIKE ?
+  `
+
 // Get any parent of a zone
 const getZoneParentQuery =
   'SELECT parent_id AS id FROM zone_interactions WHERE zone_child_id = ?'
@@ -107,6 +130,8 @@ module.exports = {
   getAllZonesOfATypeQuery,
   getZoneAdventuresQuery,
   getZoneSubzoneQuery,
+  getCloseZonesQuery,
+  searchZoneQuery,
   getZoneParentQuery,
   intersectingAdventureQuery,
   intersectingZoneQuery,

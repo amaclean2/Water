@@ -27,7 +27,7 @@ class ZoneService extends Water {
   /**
    * @param {Object} params
    * @param {string} params.adventureType
-   * @returns {Promise<Object>} an object containing an array of adventures with the key of the adventure type
+   * @returns {Promise<Object>} an object containing a geoJSON object of zones with the key of the adventure type
    */
   async getAllZonesPerType({ adventureType }) {
     try {
@@ -40,9 +40,25 @@ class ZoneService extends Water {
 
       const zones = await this.zoneDB.getZonesPerType({ adventureType })
 
-      this.zoneCache.put(adventureType, zones, CACHE_TIMEOUT)
+      const geoJsonFormattedZones = {
+        type: 'FeatureCollection',
+        features: zones.map((zone) => {
+          const { coordinates_lat, coordinates_lng, ...propertiesObject } = zone
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [coordinates_lng, coordinates_lat]
+            },
+            properties: propertiesObject,
+            id: propertiesObject.id
+          }
+        })
+      }
 
-      return { [adventureType]: zones }
+      this.zoneCache.put(adventureType, geoJsonFormattedZones, CACHE_TIMEOUT)
+
+      return { [adventureType]: geoJsonFormattedZones }
     } catch (error) {
       logger.error(error)
       throw error
@@ -89,6 +105,33 @@ class ZoneService extends Water {
    */
   async getMatchingZones({ parentZoneId, childZoneId }) {
     return await this.zoneDB.getZoneZoneMatch({ parentZoneId, childZoneId })
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {Object} params.coordinates
+   * @param {number} params.coordinates.lat
+   * @param {number} params.coordinates.lng
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} | a list of zones that are close to the specified coordinates lat and lng
+   */
+  async getZonesByDistance({ adventureType, coordinates, count = 10 }) {
+    try {
+      if (!(adventureType && coordinates.lat && coordinates.lng)) {
+        throw 'advetureType and coordinates parameters are required'
+      }
+
+      return await this.zoneDB.getZonesByDistance({
+        adventureType,
+        coordinatesLat: coordinates.lat,
+        coordinatesLng: coordinates.lng,
+        count
+      })
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 
   /**
