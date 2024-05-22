@@ -36,6 +36,14 @@ class ZoneDataLayer extends DataLayer {
       const [[zoneData]] = await this.sendQuery(getZoneInformationQuery, [
         zoneId
       ])
+
+      zoneData.coordinates = {
+        latitude: zoneData.coordinates.lat,
+        longitude: zoneData.coordinates.lng
+      }
+      delete zoneData.coordinates_lat
+      delete zoneData.coordinates_lng
+
       return zoneData
     } catch (error) {
       throw failedQuery(error)
@@ -156,7 +164,16 @@ class ZoneDataLayer extends DataLayer {
         count
       ])
 
-      return results
+      return results.map((result) => {
+        const { coordinates_lat, coordinates_lng, ...newResult } = result
+        return {
+          ...newResult,
+          coordinates: {
+            latitude: coordinates_lat,
+            longitude: coordinates_lng
+          }
+        }
+      })
     } catch (error) {
       throw failedQuery(error)
     }
@@ -213,7 +230,19 @@ class ZoneDataLayer extends DataLayer {
         [Object.values(queryParams)]
       ])
 
-      return { ...newZone, id: insertId }
+      const createdZone = {
+        ...newZone,
+        id: insertId,
+        coordinates: {
+          latitude: coordinatesLat,
+          longitude: coordinatesLng
+        }
+      }
+
+      delete createdZone.coordinatesLat
+      delete createdZone.coordinatesLng
+
+      return createdZone
     } catch (error) {
       throw failedInsertion(error)
     }
