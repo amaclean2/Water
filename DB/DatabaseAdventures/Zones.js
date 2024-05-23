@@ -38,8 +38,8 @@ class ZoneDataLayer extends DataLayer {
       ])
 
       zoneData.coordinates = {
-        latitude: zoneData.coordinates.lat,
-        longitude: zoneData.coordinates.lng
+        latitude: zoneData.coordinates_lat,
+        longitude: zoneData.coordinates_lng
       }
       delete zoneData.coordinates_lat
       delete zoneData.coordinates_lng
