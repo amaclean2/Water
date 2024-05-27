@@ -129,6 +129,7 @@ CREATE TABLE zones(
     zone_name VARCHAR(100) NOT NULL,
     adventure_type ENUM('ski', 'hike', 'climb', 'bike', 'skiApproach'),
     bio TEXT,
+    approach TEXT,
     coordinates_lat FLOAT NOT NULL,
     coordinates_lng FLOAT NOT NULL,
     creator_id INT NOT NULL,
@@ -150,6 +151,13 @@ CREATE TABLE zone_interactions(
     FOREIGN KEY(parent_id) REFERENCES zones(id) ON DELETE CASCADE,
     FOREIGN KEY(adventure_child_id) REFERENCES adventures(id) ON DELETE CASCADE,
     FOREIGN KEY(zone_child_id) REFERENCES zones(id) ON DELETE CASCADE
+);
+
+CREATE TABLE searchable_zones(
+    zone_id INT NOT NULL UNIQUE,
+    searchable_text TEXT,
+    PRIMARY KEY(zone_id),
+    FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE
 );
 
 CREATE TABLE device_tokens(

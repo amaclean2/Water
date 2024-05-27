@@ -38,8 +38,8 @@ class ZoneDataLayer extends DataLayer {
       ])
 
       zoneData.coordinates = {
-        latitude: zoneData.coordinates_lat,
-        longitude: zoneData.coordinates_lng
+        lat: zoneData.coordinates_lat,
+        lng: zoneData.coordinates_lng
       }
       delete zoneData.coordinates_lat
       delete zoneData.coordinates_lng
@@ -169,8 +169,8 @@ class ZoneDataLayer extends DataLayer {
         return {
           ...newResult,
           coordinates: {
-            latitude: coordinates_lat,
-            longitude: coordinates_lng
+            lat: coordinates_lat,
+            lng: coordinates_lng
           }
         }
       })
@@ -234,8 +234,8 @@ class ZoneDataLayer extends DataLayer {
         ...newZone,
         id: insertId,
         coordinates: {
-          latitude: coordinatesLat,
-          longitude: coordinatesLng
+          lat: coordinatesLat,
+          lng: coordinatesLng
         }
       }
 

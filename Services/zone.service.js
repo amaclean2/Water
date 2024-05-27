@@ -276,11 +276,16 @@ class ZoneService extends Water {
    */
   async editZone({ editField, editValue, editZoneId }) {
     try {
+      logger.info(`editing ${editField}`)
       await this.zoneDB.editZoneField({
         zoneProperty: editField,
         zoneValue: editValue,
         zoneId: editZoneId
       })
+
+      if (editField.includes('coordinates')) {
+        this.zoneCache.clear()
+      }
     } catch (error) {
       logger.info(error)
       throw error

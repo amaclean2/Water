@@ -61,6 +61,8 @@ const getCloseZonesQuery = `SELECT
   id AS zone_id,
   zone_name,
   adventure_type,
+  coordinates_lat,
+  coordinates_lng,
   nearest_city,
   bio
   FROM zones
@@ -94,6 +96,9 @@ const intersectingZoneQuery =
 // Create a zone
 const createZoneQuery =
   'INSERT INTO zones (zone_name, adventure_type, coordinates_lat, coordinates_lng, creator_id, nearest_city, public) VALUES ?'
+
+const createZoneKeywordsQuery =
+  'REPLACE INTO searchable_zones (searchable_text, zone_id) VALUES ?'
 
 // Add an adventure to a zone
 const addAdventureToZoneQuery =
@@ -135,6 +140,7 @@ module.exports = {
   getZoneSubzoneQuery,
   getCloseZonesQuery,
   searchZoneQuery,
+  createZoneKeywordsQuery,
   getZoneParentQuery,
   intersectingAdventureQuery,
   intersectingZoneQuery,
