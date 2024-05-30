@@ -1,4 +1,4 @@
-# Database interaction layer for Sunday Peak
+# Data Access Layer (DAL) for Sunday Peak
 
 ## Here's how this works
 
