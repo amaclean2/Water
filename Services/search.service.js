@@ -1,4 +1,5 @@
 const Water = require('.')
+const logger = require('../Config/logger')
 
 class SearchService extends Water {
   constructor(sendQuery, jwtSecret) {
@@ -13,10 +14,13 @@ class SearchService extends Water {
    * @param {boolean} params.amongFriends
    * @returns {Promise<Object[]>} | either a list of users in the friend group of the provided userId or all users that match the search string
    */
-  async userSearch({ searchText, userId, amongFriends }) {
+  async userSearch({ searchText, userId, amongFriends = false }) {
     try {
+      logger.info(`searching for ${searchText}`)
+      logger.info(`searching among friends: ${amongFriends}`)
+
       return amongFriends
-        ? await this.searchDB.friendSearch({ searchText, userId })
+        ? await this.searchDB.friendSearch({ userId, searchText })
         : await this.searchDB.userSearch({ userId, searchText })
     } catch (error) {
       logger.info(error)

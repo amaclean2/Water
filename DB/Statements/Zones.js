@@ -102,15 +102,7 @@ const removeZoneFromZoneQuery =
   'DELETE FROM zone_interactions WHERE zone_child_id IN ?'
 
 // Edit a zone field
-const editZoneFieldQueries = {
-  zone_name: 'UPDATE zones SET zone_name = ? WHERE id = ?',
-  bio: 'UPDATE zones SET bio = ? WHERE id = ?',
-  approach: 'UPDATE zones SET approach = ? WHERE id = ?',
-  coordinates_lat: 'UPDATE zones SET coordinates_lat = ? WHERE id = ?',
-  coordinates_lng: 'UPDATE zones SET coordinates_lng = ? WHERE id = ?',
-  nearest_city: 'UPDATE zones SET nearest_city = ? WHERE id = ?',
-  is_public: 'UPDATE zones SET public = ? WHERE id = ?'
-}
+const editZoneFieldQuery = 'UPDATE `zones` SET ?? = ? WHERE id = ?'
 
 // Delete a zone (probably shouldn't do this will-nilly)
 const deleteZoneQuery = 'DELETE FROM zones WHERE id = ?'
@@ -159,7 +151,7 @@ module.exports = {
   addZoneToZoneQuery,
   removeAdventureFromZoneQuery,
   removeZoneFromZoneQuery,
-  editZoneFieldQueries,
+  editZoneFieldQuery,
   deleteZoneQuery,
   deleteZoneInteractionsQuery
 }

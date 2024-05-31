@@ -1,11 +1,11 @@
 const DataLayer = require('.')
 const {
-  serachUserQuery,
   searchAdventureQuery,
   searchZoneQuery,
   searchAdventuresNotInZoneQuery,
   searchUsersWithinFriendsQuery,
-  searchZonesNotInZoneQuery
+  searchZonesNotInZoneQuery,
+  searchUserQuery
 } = require('./Statements/SearchQueries')
 const { failedQuery } = require('./utils')
 
@@ -18,8 +18,8 @@ class SearchDataLayer extends DataLayer {
    */
   async userSearch({ userId, searchText }) {
     try {
-      const [results] = await this.sendQuery(serachUserQuery, [
-        searchText,
+      const [results] = await this.sendQuery(searchUserQuery, [
+        `"${searchText}"`,
         userId
       ])
       return results
@@ -34,10 +34,10 @@ class SearchDataLayer extends DataLayer {
    * @param {string} params.searchText
    * @returns {Promise<Object[]>} | a list of users that match the search text, excluding the current user. Only users with a relationship to the current user are provided
    */
-  async friendSearch({ searchText, userId }) {
+  async friendSearch({ userId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchUsersWithinFriendsQuery, [
-        searchText,
+        `"${searchText}"`,
         userId,
         userId,
         userId
@@ -55,7 +55,9 @@ class SearchDataLayer extends DataLayer {
    */
   async adventureSearch({ searchText }) {
     try {
-      const [results] = await this.sendQuery(searchAdventureQuery, [searchText])
+      const [results] = await this.sendQuery(searchAdventureQuery, [
+        `"${searchText}"`
+      ])
       return results
     } catch (error) {
       throw failedQuery(error)
@@ -71,7 +73,7 @@ class SearchDataLayer extends DataLayer {
   async adventureSearchExcludingZone({ parentId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchAdventuresNotInZoneQuery, [
-        searchText,
+        `"${searchText}"`,
         parentId
       ])
       return results
@@ -87,7 +89,9 @@ class SearchDataLayer extends DataLayer {
    */
   async zoneSearch({ searchText }) {
     try {
-      const [results] = await this.sendQuery(searchZoneQuery, [searchText])
+      const [results] = await this.sendQuery(searchZoneQuery, [
+        `"${searchText}"`
+      ])
       return results
     } catch (error) {
       throw failedQuery(error)
@@ -103,7 +107,7 @@ class SearchDataLayer extends DataLayer {
   async zoneSearchExcludingParent({ parentId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchZonesNotInZoneQuery, [
-        searchText,
+        `"${searchText}"`,
         parentId
       ])
       return results

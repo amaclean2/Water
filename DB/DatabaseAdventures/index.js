@@ -22,12 +22,13 @@ const {
   createNewApproachStatement,
   createNewSkiApproachStatement,
   selectSkiApproachStatement,
-  buildBreadcrumbStatement
+  buildBreadcrumbStatement,
+  updateAdventureGeneralStatement,
+  updateSpecificStatements
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
   adventureTemplate,
-  getStatementKey,
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
@@ -38,8 +39,7 @@ const {
   failedInsertion,
   failedQuery,
   failedUpdate,
-  failedDeletion,
-  calculateCameraBounds
+  failedDeletion
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
 const logger = require('../../Config/logger')
@@ -408,11 +408,13 @@ class AdventureDataLayer extends DataLayer {
       }
 
       if (adventureTemplate.includes(field.name)) {
+        // general adventure property
         logger.info(
           `edit new general query on ${field.adventure_id}, ${field.name}`
         )
 
-        await this.sendQuery(updateAdventureStatements[field.name], [
+        await this.sendQuery(updateAdventureGeneralStatement, [
+          field.name,
           field.value,
           field.adventure_id
         ])
@@ -421,16 +423,16 @@ class AdventureDataLayer extends DataLayer {
           `finished editing query on ${field.adventure_id}, ${field.name}`
         )
       } else {
+        // specific adventure property
         logger.info(
           `edit new specific query on ${field.adventure_id}, ${field.name}`
         )
         // if we are updating one of the specific adventure fields then we just do that
-        await this.sendQuery(
-          updateAdventureStatements[
-            getStatementKey(field.name, field.adventure_type)
-          ],
-          [field.value, field.adventure_id]
-        )
+        await this.sendQuery(updateSpecificStatements[field.adventure_type], [
+          field.name,
+          field.value,
+          field.adventure_id
+        ])
         logger.info(
           `finished editing query on ${field.adventure_id}, ${field.name}`
         )

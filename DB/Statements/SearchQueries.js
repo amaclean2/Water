@@ -38,7 +38,7 @@ adventure_type,
 nearest_city
 FROM adventures
 WHERE MATCH(adventure_name, bio, nearest_city)
-AGAINST('("?")' IN BOOLEAN MODE)`
+AGAINST('(?)' IN BOOLEAN MODE)`
 
 // search adventures that aren't in the current zone
 const searchAdventuresNotInZoneQuery = `
@@ -50,7 +50,7 @@ a.nearest_city
 FROM adventures AS a
 INNER JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
 WHERE MATCH(a.adventure_name, a.bio, a.nearest_city)
-AGAINST('("?")' IN BOOLEAN MODE)
+AGAINST('(?)' IN BOOLEAN MODE)
 AND zi.parent_id != ?`
 
 // search zones

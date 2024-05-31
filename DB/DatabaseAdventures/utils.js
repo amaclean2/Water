@@ -138,38 +138,6 @@ const adventureTemplate = [
   'difficulty'
 ]
 
-const getStatementKey = (name, type) => {
-  switch (name) {
-    case 'summit_elevation':
-      if (type === 'ski') return 'ski_summit_elevation'
-      else if (type === 'bike') return 'bike_summit_elevation'
-      else if (type === 'skiApproach') return 'ski_approach_summit_elevation'
-      else return 'hike_summit_elevation'
-    case 'base_elevation':
-      if (type === 'ski') return 'ski_base_elevation'
-      else if (type === 'bike') return 'bike_base_elevaiton'
-      else if (type === 'skiApproach') return 'ski_approach_base_elevation'
-      else return 'hike_base_elevation'
-    case 'season':
-      if (type === 'ski') return 'ski_season'
-      else if (type === 'bike') return 'bike_season'
-      else if (type === 'climb') return 'climb_season'
-      else return 'hike_season'
-    case 'approach':
-      return 'climb_approach'
-    case 'trail_path':
-      if (type === 'ski') return 'ski_trail_path'
-      else if (type === 'hike') return 'hike_trail_path'
-      else if (type === 'skiApproach') return 'ski_approach_trail_path'
-      return 'bike_trail_path'
-    case 'exposure':
-      if (type === 'ski') return 'ski_exposure'
-      return 'approach_exposure'
-    default:
-      return name
-  }
-}
-
 const getPropsToImport = (adventure) => {
   const { adventure_type } = adventure
   const adventureProperties = {}
@@ -260,7 +228,6 @@ module.exports = {
   getHikeSpecificFields,
   getBikeSpecificFields,
   getGeneralFields,
-  getStatementKey,
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,

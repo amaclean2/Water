@@ -17,7 +17,8 @@ const {
   getZoneParentQuery,
   deleteZoneInteractionsQuery,
   getCloseZonesQuery,
-  buildBreadcrumbQuery
+  buildBreadcrumbQuery,
+  editZoneFieldQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -201,9 +202,7 @@ class ZoneDataLayer extends DataLayer {
    */
   async buildBreadcrumb({ zoneId }) {
     try {
-      const [results] = await this.sendQuery(buildBreadcrumbQuery, [
-        adventureId
-      ])
+      const [results] = await this.sendQuery(buildBreadcrumbQuery, [zoneId])
       return results.map((result) => ({
         ...result,
         category_type: 'zone'
@@ -278,9 +277,12 @@ class ZoneDataLayer extends DataLayer {
   async editZoneField({ zoneProperty, zoneValue, zoneId }) {
     try {
       logger.info(`zone property: ${zoneProperty}`)
-      const editQuery = editZoneFieldQueries[zoneProperty]
 
-      const something = await this.sendQuery(editQuery, [zoneValue, zoneId])
+      const something = await this.sendQuery(editZoneFieldQuery, [
+        zoneProperty,
+        zoneValue,
+        zoneId
+      ])
       return something
     } catch (error) {
       throw failedUpdate(error)

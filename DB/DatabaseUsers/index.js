@@ -10,13 +10,13 @@ const {
   checkPasswordResetTokenStatement,
   updateNewPasswordStatement,
   getFriendsStatement,
-  findFromFriendsStatement,
   getPasswordHashStatement,
   getIsFriendStatement,
   createUserPictureStatement,
   getUserPicturesStatement,
   deletePictureStatement,
-  optOutOfEmailStatement
+  optOutOfEmailStatement,
+  updateUserStatement
 } = require('../Statements')
 const { selectDeviceTokenForUserStatement } = require('../Statements/Messages')
 const {
@@ -271,10 +271,7 @@ class UserDataLayer extends DataLayer {
    */
   async updateDatabaseUser({ fieldName, fieldValue, userId }) {
     try {
-      await this.sendQuery(updateUserStatements[fieldName], [
-        fieldValue,
-        userId
-      ])
+      await this.sendQuery(updateUserStatement, [fieldName, fieldValue, userId])
       return 'update success'
     } catch (error) {
       throw failedUpdate(error)

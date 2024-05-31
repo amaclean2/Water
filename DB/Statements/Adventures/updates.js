@@ -1,9 +1,15 @@
 // update adventure property
+const updateAdventureGeneralStatement =
+  'UPDATE `adventures` SET ?? = ? WHERE id = ?'
+const updateSpecificStatements = {
+  ski: 'UPDATE `ski` SET ?? = ? WHERE id = ?',
+  climb: 'UPDATE `climb` SET ?? = ? WHERE id = ?',
+  hike: 'UPDATE `hike` SET ?? = ? WHERE id = ?',
+  bike: 'UPDATE `bike` set ?? = ? WHERE id = ?',
+  skiApproach: 'UPDATE `ski_approach` SET ?? = ? WHERE id = ?'
+}
+
 const updateAdventureStatements = {
-  adventure_name: 'UPDATE adventures SET adventure_name = ? WHERE id = ?',
-  coordinates_lat: 'UPDATE adventures SET coordinates_lat = ? WHERE id = ?',
-  coordinates_lng: 'UPDATE adventures SET coordinates_lng = ? WHERE id = ?',
-  difficulty: 'UPDATE adventures SET difficulty = ? WHERE id = ?',
   avg_angle:
     'UPDATE ski AS s INNER JOIN adventures AS a ON a.adventure_ski_id = s.id SET s.avg_angle = ? WHERE a.id = ?',
   max_angle:
@@ -80,5 +86,7 @@ const updateAdventureStatements = {
 }
 
 module.exports = {
-  updateAdventureStatements
+  updateAdventureStatements,
+  updateAdventureGeneralStatement,
+  updateSpecificStatements
 }
