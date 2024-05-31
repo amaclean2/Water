@@ -19,7 +19,7 @@ class SearchDataLayer extends DataLayer {
   async userSearch({ userId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchUserQuery, [
-        `"${searchText}"`,
+        `${searchText}`,
         userId
       ])
       return results
@@ -37,7 +37,7 @@ class SearchDataLayer extends DataLayer {
   async friendSearch({ userId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchUsersWithinFriendsQuery, [
-        `"${searchText}"`,
+        `${searchText}`,
         userId,
         userId,
         userId
@@ -56,7 +56,7 @@ class SearchDataLayer extends DataLayer {
   async adventureSearch({ searchText }) {
     try {
       const [results] = await this.sendQuery(searchAdventureQuery, [
-        `"${searchText}"`
+        `${searchText}`
       ])
       return results
     } catch (error) {
@@ -73,7 +73,7 @@ class SearchDataLayer extends DataLayer {
   async adventureSearchExcludingZone({ parentId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchAdventuresNotInZoneQuery, [
-        `"${searchText}"`,
+        `${searchText}`,
         parentId
       ])
       return results
@@ -89,9 +89,7 @@ class SearchDataLayer extends DataLayer {
    */
   async zoneSearch({ searchText }) {
     try {
-      const [results] = await this.sendQuery(searchZoneQuery, [
-        `"${searchText}"`
-      ])
+      const [results] = await this.sendQuery(searchZoneQuery, [`${searchText}`])
       return results
     } catch (error) {
       throw failedQuery(error)
@@ -107,7 +105,7 @@ class SearchDataLayer extends DataLayer {
   async zoneSearchExcludingParent({ parentId, searchText }) {
     try {
       const [results] = await this.sendQuery(searchZonesNotInZoneQuery, [
-        `"${searchText}"`,
+        `${searchText}`,
         parentId
       ])
       return results

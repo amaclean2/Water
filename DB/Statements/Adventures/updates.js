@@ -2,11 +2,13 @@
 const updateAdventureGeneralStatement =
   'UPDATE `adventures` SET ?? = ? WHERE id = ?'
 const updateSpecificStatements = {
-  ski: 'UPDATE `ski` SET ?? = ? WHERE id = ?',
-  climb: 'UPDATE `climb` SET ?? = ? WHERE id = ?',
-  hike: 'UPDATE `hike` SET ?? = ? WHERE id = ?',
-  bike: 'UPDATE `bike` set ?? = ? WHERE id = ?',
-  skiApproach: 'UPDATE `ski_approach` SET ?? = ? WHERE id = ?'
+  ski: 'UPDATE `ski` SET ?? = ? WHERE id = (SELECT adventure_ski_id FROM adventures WHERE id = ?)',
+  climb:
+    'UPDATE `climb` SET ?? = ? WHERE id = (SELECT adventure_climb_id FROM adventures WHERE id = ?)',
+  hike: 'UPDATE `hike` SET ?? = ? WHERE id = (SELECT adventure_hike_id FROM adventures WHERE id = ?)',
+  bike: 'UPDATE `bike` set ?? = ? WHERE id = (SELECT adventure_bike_id FROM adventures WHERE id = ?)',
+  skiApproach:
+    'UPDATE `ski_approach` SET ?? = ? WHERE id = (SELECT ski_approach_id FROM adventures WHERE id = ?)'
 }
 
 const updateAdventureStatements = {

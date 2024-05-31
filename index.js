@@ -12,6 +12,7 @@ const {
   deleteStatements
 } = require('./DB/Statements/testStatements')
 const ZoneService = require('./Services/zone.service')
+const logger = require('./Config/logger')
 
 /**
  * @class
@@ -39,6 +40,7 @@ class SundayService {
      */
     this.sendQuery = (sqlStatement, sqlValues) => {
       const formattedStatement = SQLString.format(sqlStatement, sqlValues)
+      logger.debug(`sql statement: ${formattedStatement}`)
       return pool.execute(formattedStatement)
     }
 

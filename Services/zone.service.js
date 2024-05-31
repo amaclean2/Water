@@ -75,8 +75,8 @@ class ZoneService extends Water {
         ...(await this.zoneDB.getZoneMetadata({ zoneId })),
         adventures: await this.zoneDB.getZoneAdventures({ zoneId }),
         zones: await this.zoneDB.getZoneSubzones({ zoneId }),
-        images: [],
-        breadcrumb: this.zoneDB.buildBreadcrumb({ zoneId })
+        breadcrumb: await this.zoneDB.buildBreadcrumb({ zoneId }),
+        images: []
       }
 
       return zoneData
