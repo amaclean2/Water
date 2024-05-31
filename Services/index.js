@@ -4,6 +4,7 @@ const TodoAdventureDataLayer = require('../DB/DatabaseAdventures/TodoAdventure')
 const ZoneDataLayer = require('../DB/DatabaseAdventures/Zones')
 const UserDataLayer = require('../DB/DatabaseUsers')
 const MessageDataLayer = require('../DB/DatabaseUsers/messages')
+const SearchDataLayer = require('../DB/Search')
 const AuthService = require('./auth.service')
 
 class Water {
@@ -14,6 +15,7 @@ class Water {
     this.zoneDB = new ZoneDataLayer(sqlDependencies)
     this.completedDB = new CompletedAdventureDataLayer(sqlDependencies)
     this.todoDB = new TodoAdventureDataLayer(sqlDependencies)
+    this.searchDB = new SearchDataLayer(sqlDependencies)
     this.auth = new AuthService(jwtSecret)
   }
 

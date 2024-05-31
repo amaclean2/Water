@@ -16,7 +16,8 @@ const {
   deleteZoneQuery,
   getZoneParentQuery,
   deleteZoneInteractionsQuery,
-  getCloseZonesQuery
+  getCloseZonesQuery,
+  buildBreadcrumbQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -188,6 +189,25 @@ class ZoneDataLayer extends DataLayer {
       } else {
         return null
       }
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.zoneId
+   * @returns {Promise<Object[]>} a list of objects containing the
+   */
+  async buildBreadcrumb({ zoneId }) {
+    try {
+      const [results] = await this.sendQuery(buildBreadcrumbQuery, [
+        adventureId
+      ])
+      return results.map((result) => ({
+        ...result,
+        category_type: 'zone'
+      }))
     } catch (error) {
       throw failedQuery(error)
     }

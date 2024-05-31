@@ -1,7 +1,6 @@
 const { Cache } = require('memory-cache')
 
 const Water = require('.')
-const SearchService = require('./search.service')
 const logger = require('../Config/logger')
 
 const CACHE_TIMEOUT = 1000 * 360
@@ -9,7 +8,6 @@ const CACHE_TIMEOUT = 1000 * 360
 class ZoneService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
     this.zoneCache = new Cache()
   }
 
@@ -77,7 +75,8 @@ class ZoneService extends Water {
         ...(await this.zoneDB.getZoneMetadata({ zoneId })),
         adventures: await this.zoneDB.getZoneAdventures({ zoneId }),
         zones: await this.zoneDB.getZoneSubzones({ zoneId }),
-        images: []
+        images: [],
+        breadcrumb: this.zoneDB.buildBreadcrumb({ zoneId })
       }
 
       return zoneData

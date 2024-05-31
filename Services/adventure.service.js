@@ -1,5 +1,4 @@
 const Water = require('.')
-const SearchService = require('./search.service')
 const { Cache } = require('memory-cache')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
@@ -14,7 +13,6 @@ const CACHE_TIMEOUT = 1000 * 360
 class AdventureService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
     this.adventureCache = new Cache()
   }
   /**
@@ -61,10 +59,14 @@ class AdventureService extends Water {
     const images = await this.adventureDB.getAdventureImages({
       adventureId: id
     })
+    const breadcrumb = await this.adventureDB.buldBreadcrumb({
+      adventureId: id
+    })
 
     const formattedAdventure = {
       ...adventure,
       images,
+      breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
       public: !!adventure.public,
@@ -105,11 +107,6 @@ class AdventureService extends Water {
     // we need to clear the cache since it's now obsolete
     this.adventureCache.del(adventureObject.adventure_type)
 
-    this.search.saveAdventureKeywords({
-      searchableFields: adventure,
-      adventureId
-    })
-
     return {
       adventure,
       adventureList: await this.getAdventureList({
@@ -134,13 +131,6 @@ class AdventureService extends Water {
           ],
           []
         )
-
-        for (const adventure in allAdventures) {
-          this.search.saveAdventureKeywords({
-            searchableFields: allAdventures[adventure],
-            adventureId: allAdventures[adventure].id
-          })
-        }
 
         this.adventureCache.clear()
         return allAdventures
@@ -198,17 +188,6 @@ class AdventureService extends Water {
 
   /**
    * @param {Object} params
-   * @param {string} params.search | the search string to use against the users list
-   * @returns {Promise<AdventureObject[]>} a list of adventures
-   */
-  searchForAdventures({ search }) {
-    if (!search?.length) return []
-
-    return this.search.handleAdventureSearch({ search })
-  }
-
-  /**
-   * @param {Object} params
    * @param {string} params.adventureType
    * @param {Object} params.coordinates
    * @param {number} params.coordinates.lat
@@ -245,8 +224,8 @@ class AdventureService extends Water {
 
   /**
    * @param {Object} params
-   * @param {number} params.adventureId | the id of the adventure to search for
-   * @param {string} params.adventureType | the type of the adventure to search for
+   * @param {number} params.adventureId
+   * @param {string} params.adventureType
    * @returns {Promise<AdventureObject>}
    */
   getSpecificAdventure({ adventureId, adventureType }) {
@@ -389,34 +368,22 @@ class AdventureService extends Water {
 
         return await this.databaseEditPath({ field })
       } else {
-        const adventureKeywords = await this.adventureDB.databaseEditAdventure({
+        await this.adventureDB.databaseEditAdventure({
           field
         })
 
-        let allAdventures = null
-        if (['coordinates_lat', 'coordinates_lng'].includes(field.name)) {
-          this.adventureCache.clear()
-          allAdventures = await this.getAdventureList({
-            adventureType: field.adventure_type
-          })
-        }
+        this.adventureCache.del(field.adventure_type)
 
-        if (
-          adventureKeywords !== false &&
-          this.search.adventureKeywordLibrary.includes(field.name)
-        ) {
-          this.adventureCache.del(adventureKeywords.adventure_type)
-          await this.search.saveAdventureKeywords({
-            searchableFields: adventureKeywords,
-            adventureId: field.adventure_id
-          })
-        }
+        let allAdventures = await this.getAdventureList({
+          adventureType: field.adventure_type
+        })
+        this.adventureCache.put(field.adventure_type, allAdventures)
 
         logger.info(`database update finished on ${field.adventure_id}`)
 
         return {
           field,
-          ...(allAdventures !== null && { all_adventures: allAdventures })
+          all_adventures: allAdventures
         }
       }
     } catch (error) {

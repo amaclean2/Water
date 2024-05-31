@@ -26,6 +26,12 @@ const createMain = ({ file }) => {
   })
 }
 
+/**
+ * @param {Object} params
+ * @param {string} params.directory
+ * @param {number} params.userId
+ * @returns {Promise<Object>} an object containing the new file name and the userId
+ */
 const createDefaultProfilePicture = async ({ directory, userId }) => {
   return new Promise((resolve, reject) => {
     const newFileName = userId + '.png'
@@ -106,6 +112,11 @@ const createProfilePicture = async ({ file }) => {
   })
 }
 
+/**
+ * @param {Object} params
+ * @param {string} params.url
+ * @returns {Promise<string>} response status
+ */
 const removeImage = async ({ url }) => {
   let finalPath
 

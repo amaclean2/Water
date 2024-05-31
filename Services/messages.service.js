@@ -1,12 +1,10 @@
 const Water = require('.')
 const logger = require('../Config/logger')
-const SearchService = require('./search.service')
 const { createAPNNotification } = require('./utils/notifications')
 
 class MessagingService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
   }
 
   /**

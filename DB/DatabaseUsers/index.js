@@ -10,10 +10,7 @@ const {
   checkPasswordResetTokenStatement,
   updateNewPasswordStatement,
   getFriendsStatement,
-  findNewFriendStatement,
   findFromFriendsStatement,
-  insertSearchableStatement,
-  getSearchFields,
   getPasswordHashStatement,
   getIsFriendStatement,
   createUserPictureStatement,
@@ -172,31 +169,6 @@ class UserDataLayer extends DataLayer {
   }
 
   /**
-   *
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.userId
-   * @returns {Promise} void
-   */
-  updateSearchUserKeywords({ keyword, userId }) {
-    return this.sendQuery(insertSearchableStatement, [keyword, userId]).catch(
-      failedInsertion
-    )
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @returns {Promise} a list of any users that match the provided string
-   */
-  searchDatabaseForUserString({ keyword }) {
-    return this.sendQuery(findNewFriendStatement, [`%${keyword}%`])
-      .then(([results]) => results)
-      .catch(failedQuery)
-  }
-
-  /**
    * @param {Object} params
    * @param {string} params.url
    * @param {number} params.userId
@@ -233,23 +205,6 @@ class UserDataLayer extends DataLayer {
     return this.sendQuery(deletePictureStatement, [formattedUrl]).catch(
       failedDeletion
     )
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.userId
-   * @returns {Promise} a list of any friends of the user that match the provided string
-   */
-  searchFriendString({ keywords, userId }) {
-    return this.sendQuery(findFromFriendsStatement, [
-      userId,
-      userId,
-      `%${keywords}%`
-    ])
-      .then(([results]) => results)
-      .catch(failedQuery)
   }
 
   /**
@@ -312,13 +267,18 @@ class UserDataLayer extends DataLayer {
    * @param {string} params.fieldName
    * @param {string} params.fieldValue
    * @param {number} params.userId
-   * @returns {Promise} the modified user
+   * @returns {Promise<void>} an update status
    */
-  updateDatabaseUser({ fieldName, fieldValue, userId }) {
-    return this.sendQuery(updateUserStatements[fieldName], [fieldValue, userId])
-      .then(() => this.sendQuery(getSearchFields, [userId]))
-      .then(([[result]]) => result)
-      .catch(failedUpdate)
+  async updateDatabaseUser({ fieldName, fieldValue, userId }) {
+    try {
+      await this.sendQuery(updateUserStatements[fieldName], [
+        fieldValue,
+        userId
+      ])
+      return 'update success'
+    } catch (error) {
+      throw failedUpdate(error)
+    }
   }
 
   /**

@@ -69,18 +69,6 @@ const getCloseZonesQuery = `SELECT
   WHERE public = 1 AND adventure_type = ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
-// Search zones (needs new table searchable_zones)
-const searchZoneQuery = `
-  SELECT
-  z.zone_name,
-  z.id,
-  z.adventure_type,
-  z.nearest_city
-  FROM zones AS z
-  INNER JOIN searchable_zones AS sz ON sz.zone_id = z.id
-  WHERE sz.searchable_text LIKE ?
-  `
-
 // Get any parent of a zone
 const getZoneParentQuery =
   'SELECT parent_id AS id FROM zone_interactions WHERE zone_child_id = ?'
@@ -96,9 +84,6 @@ const intersectingZoneQuery =
 // Create a zone
 const createZoneQuery =
   'INSERT INTO zones (zone_name, adventure_type, coordinates_lat, coordinates_lng, creator_id, nearest_city, public) VALUES ?'
-
-const createZoneKeywordsQuery =
-  'REPLACE INTO searchable_zones (searchable_text, zone_id) VALUES ?'
 
 // Add an adventure to a zone
 const addAdventureToZoneQuery =
@@ -130,8 +115,34 @@ const editZoneFieldQueries = {
 // Delete a zone (probably shouldn't do this will-nilly)
 const deleteZoneQuery = 'DELETE FROM zones WHERE id = ?'
 
+// Delete a zone interaction
 const deleteZoneInteractionsQuery =
   'DELETE FROM zone_interactions WHERE parent_id = ? OR zone_child_id = ?'
+
+// Build the breadcrumb for a zone
+const buildBreadcrumbQuery = `
+WITH RECURSIVE parents AS (
+  SELECT
+  z.id AS id,
+  z.adventure_type,
+  z.zone_name AS name,
+  zi.parent_id
+  FROM zones AS z
+  INNER JOIN zone_interactions AS zi ON z.id = zi.zone_child_id
+  WHERE z.id = ?
+
+  UNION ALL
+
+  SELECT
+  z.id AS id,
+  z.adventure_type,
+  z.zone_name AS name,
+  zi.parent_id
+  FROM parents AS ps
+  INNER JOIN zone_interactions AS zi ON ps.parent_id = zi.zone_child_id
+  INNER JOIN zones AS z ON zi.zone_child_id = z.id
+)
+SELECT name, id, adventure_type FROM parents`
 
 module.exports = {
   getZoneInformationQuery,
@@ -139,8 +150,7 @@ module.exports = {
   getZoneAdventuresQuery,
   getZoneSubzoneQuery,
   getCloseZonesQuery,
-  searchZoneQuery,
-  createZoneKeywordsQuery,
+  buildBreadcrumbQuery,
   getZoneParentQuery,
   intersectingAdventureQuery,
   intersectingZoneQuery,

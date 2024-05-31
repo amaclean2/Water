@@ -78,20 +78,6 @@ const getCloseAdventures = `SELECT
 const getAdventureRatingAndDifficulty =
   'SELECT rating, difficulty, id AS adventure_id, adventure_type FROM adventures WHERE id = ?'
 
-const searchAdventureStatement = `
-SELECT
-a.adventure_name,
-a.id,
-a.adventure_type,
-a.nearest_city
-FROM adventures AS a
-INNER JOIN searchable_adventures AS sa ON sa.adventure_id = a.id
-WHERE sa.searchable_text LIKE ?
-`
-
-const getKeywordsStatement =
-  'SELECT a.adventure_name, a.adventure_type, a.bio, CONCAT(u.first_name, u.last_name) AS creator_name, a.nearest_city, a.coordinates_lat, a.coordinates_lng, a.public FROM adventures AS a INNER JOIN users AS u ON a.creator_id = u.id WHERE a.id = ?'
-
 const selectAdventuresStatement =
   'SELECT id, adventure_name, adventure_type, public, coordinates_lat, coordinates_lng FROM adventures WHERE adventure_type = ? AND public = 1'
 const selectSkiApproachStatement = `
@@ -117,14 +103,35 @@ const getSpecificAdventureId = `SELECT
     ELSE ski_approach_id END
     AS specific_adventure_id FROM adventures WHERE id = ?`
 
+const buildBreadcrumbStatement = `
+WITH RECURSIVE parents AS (
+  SELECT
+  a.id AS id,
+  a.adventure_type,
+  a.adventure_name AS name,
+  zi.parent_id
+  FROM adventures AS a
+  INNER JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
+  WHERE a.id = ?
+  UNION ALL
+  SELECT
+  z.id AS id,
+  z.adventure_type,
+  z.zone_name AS name,
+  zi.parent_id
+  FROM parents AS ps
+  INNER JOIN zone_interactions AS zi ON ps.parent_id = zi.zone_child_id
+  INNER JOIN zones AS z ON zi.zone_child_id = z.id
+)
+SELECT name, id, adventure_type FROM parents`
+
 module.exports = {
   getAdventureTypeStatement,
+  buildBreadcrumbStatement,
   selectAdventureByIdGroup,
   selectSkiApproachStatement,
   getCloseAdventures,
   getAdventureRatingAndDifficulty,
-  searchAdventureStatement,
-  getKeywordsStatement,
   selectAdventuresStatement,
   getSpecificAdventureId
 }

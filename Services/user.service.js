@@ -1,7 +1,6 @@
 const fs = require('fs')
 const Water = require('.')
 const { handleEmailUserFollowed, handleNewUserEmail } = require('./utils/email')
-const SearchService = require('./search.service')
 const MessagingService = require('./messages.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
 const {
@@ -17,7 +16,6 @@ const { createAPNNotification } = require('./utils/notifications')
 class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
     this.message = new MessagingService(sendQuery, jwtSecret)
   }
 
@@ -193,13 +191,6 @@ class UserService extends Water {
         }
       })
 
-      // save information about the user in a string that can be looked up easily
-      logger.info('saving user keywords')
-      this.search.saveUserKeywords({
-        searchableFields: user,
-        userId
-      })
-
       // send a message to the user introducing them to the app
       logger.info('creating new introduction conversation')
       if (process.env.ADMIN_ID) {
@@ -281,36 +272,15 @@ class UserService extends Water {
    * @param {number} params.id | user id required to get user
    * @returns {Promise<UserObject>}
    */
-  getUserFromId({ userId }) {
-    return this.#buildUserObject({ initiation: { id: userId } }).then(
-      (user) => {
-        delete user.phone
-        return user
-      }
-    )
-  }
-
-  /**
-   * @param {*} params
-   * @param {string} params.searchString | the string to use in the search
-   * @returns {Promise<UserObject[]>} | an array of users that match the search text
-   */
-  searchForUsers({ searchString }) {
-    if (!searchString?.length) return []
-
-    return this.search.userSearch({ keystring: searchString })
-  }
-
-  /**
-   * @param {*} params
-   * @param {string} params.searchString | the string to use in the search
-   * @param {number} params.userId | the is of the user to search for friends of
-   * @returns {Promise<UserObject[]>} an array of friends that match the search text
-   */
-  searchForFriends({ searchString, userId }) {
-    if (!searchString?.length) return []
-
-    return this.search.userSearch({ keystring: searchString, userId })
+  async getUserFromId({ userId }) {
+    try {
+      const user = await this.#buildUserObject({ initiation: { id: userId } })
+      delete user.phone
+      return user
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 
   /**
@@ -389,11 +359,7 @@ class UserService extends Water {
    * @return {Promise<void>}
    */
   editUser({ userId, fieldName, fieldValue }) {
-    return this.userDB
-      .updateDatabaseUser({ fieldName, fieldValue, userId })
-      .then((updatedUser) =>
-        this.search.saveUserKeywords({ searchableFields: updatedUser, userId })
-      )
+    return this.userDB.updateDatabaseUser({ fieldName, fieldValue, userId })
   }
 
   /**
@@ -470,6 +436,7 @@ class UserService extends Water {
    * @param {string} params.url
    * @param {number} params.userId
    * @param {number} params.adventureId
+   * @returns {Promise<void>}
    */
   async saveImage({ file, url, userId, adventureId, profilePicture }) {
     if (!userId || !url) {
@@ -516,21 +483,22 @@ class UserService extends Water {
    * @param {number} params.userId
    * @returns {Promise<void>}
    */
-  removeProfileImage({ userId, oldUrl }) {
-    return removeImage({ url: oldUrl })
-      .then(() =>
-        createDefaultProfilePicture({
-          directory: process.env.FILE_STORAGE_PATH,
-          userId
-        })
-      )
-      .then(({ fileName }) =>
-        this.userDB.updateDatabaseUser({
-          userId,
-          fieldName: 'profile_picture_url',
-          fieldValue: `${oldUrl.split('/profile').shift()}/profile/${fileName}`
-        })
-      )
+  async removeProfileImage({ userId, oldUrl }) {
+    try {
+      await removeImage({ url: oldUrl })
+      const { fileName } = await createDefaultProfilePicture({
+        directory: process.env.FILE_STORAGE_PATH,
+        userId
+      })
+      await this.userDB.updateDatabaseUser({
+        userId,
+        fieldName: 'profile_picture_url',
+        fieldValue: `${oldUrl.split('/profile').shift()}/profile/${fileName}`
+      })
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 
   /**
@@ -553,7 +521,7 @@ class UserService extends Water {
       }
 
       await createProfilePicture({ file })
-      return await this.userDB.updateDatabaseUser({
+      await this.userDB.updateDatabaseUser({
         userId,
         fieldName: 'profile_picture_url',
         fieldValue: url

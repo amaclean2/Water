@@ -115,8 +115,9 @@ CREATE TABLE adventures(
     public TINYINT NOT NULL,
     rating VARCHAR(50),
     difficulty VARCHAR(50),
+    parent_id INT,
     PRIMARY KEY(id),
-    FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(creator_id) REFERENCES users(id),
     FOREIGN KEY(adventure_ski_id) REFERENCES ski(id) ON DELETE CASCADE,
     FOREIGN KEY(adventure_climb_id) REFERENCES climb(id) ON DELETE CASCADE,
     FOREIGN KEY(adventure_hike_id) REFERENCES hike(id) ON DELETE CASCADE,
@@ -133,12 +134,13 @@ CREATE TABLE zones(
     coordinates_lat FLOAT NOT NULL,
     coordinates_lng FLOAT NOT NULL,
     creator_id INT NOT NULL,
+    parent_id INT,
     date_created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     nearest_city VARCHAR(100),
     public TINYINT NOT NULL,
     PRIMARY KEY(id),
-    FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(creator_id) REFERENCES users(id),
 );
 
 CREATE TABLE zone_interactions(
@@ -168,11 +170,17 @@ CREATE TABLE device_tokens(
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE searchable_adventures(
-    adventure_id INT NOT NULL UNIQUE,
+CREATE TABLE searchable(
+    id INT NOT NULL AUTO_INCREMENT,
+    adventure_id INT,
+    zone_id INT,
+    user_id INT,
     searchable_text TEXT,
-    PRIMARY KEY(adventure_id),
-    FOREIGN KEY(adventure_id) REFERENCES adventures(id) ON DELETE CASCADE
+    group_type ENUM('adventure', 'zone', 'user'),
+    PRIMARY KEY(id),
+    FOREIGN KEY(adventure_id) REFERENCES adventures(id) ON DELETE CASCADE,
+    FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE todo_adventures(

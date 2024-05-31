@@ -3,12 +3,9 @@ const { AdventureObject } = require('../../TypeDefs/adventures')
 const {
   selectAdventuresStatement,
   updateAdventureStatements,
-  searchAdventureStatement,
-  addKeywordStatement,
   deleteSkiStatement,
   deleteClimbStatement,
   deleteHikeStatement,
-  getKeywordsStatement,
   selectAdventureByIdGroup,
   createNewClimbStatement,
   createNewHikeStatement,
@@ -24,7 +21,8 @@ const {
   createNewBikeAdventureStatement,
   createNewApproachStatement,
   createNewSkiApproachStatement,
-  selectSkiApproachStatement
+  selectSkiApproachStatement,
+  buildBreadcrumbStatement
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
@@ -197,12 +195,13 @@ class AdventureDataLayer extends DataLayer {
       // pathAdventures are any adventures that would have a path/elevations property
       if (
         pathAdventures.includes(adventureType) &&
+        selectedAdventure.path &&
         selectedAdventure?.path?.length !== 0
       ) {
         // splitting the array around a point that's [0]. This point is there to split the
         // path shown on the map with the points used to edit the path
-        const pathArr = JSON.parse(selectedAdventure.path)
-        const splitIdx = pathArr.findIndex((e) => e.length === 1)
+        const pathArr = JSON.parse(selectedAdventure.path ?? '[]')
+        const splitIdx = pathArr?.findIndex((e) => e.length === 1)
         if (splitIdx !== -1) {
           selectedAdventure.path = pathArr.slice(0, splitIdx)
           selectedAdventure.points = pathArr.slice(splitIdx + 1)
@@ -398,12 +397,11 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.field.value
    * @param {number} params.field.adventure_id
    * @param {string} params.field.adventure_type
-   * @returns {Promise<AdventureObject>} the updated adventure
+   * @returns {Promise<void>} nothing
    */
   async databaseEditAdventure({ field }) {
     // some of the adventure fields are in the adventures table, some are in the specific-type table
     // if this field is in the general table then we just need to update that one.
-    // Editing requires another read because we need to update the searchable statement table as well
     try {
       if (field.name === 'paths') {
         throw 'paths have their own edit statement'
@@ -418,15 +416,10 @@ class AdventureDataLayer extends DataLayer {
           field.value,
           field.adventure_id
         ])
-        const [[statements]] = await this.sendQuery(getKeywordsStatement, [
-          field.adventure_id
-        ])
 
         logger.info(
           `finished editing query on ${field.adventure_id}, ${field.name}`
         )
-
-        return statements
       } else {
         logger.info(
           `edit new specific query on ${field.adventure_id}, ${field.name}`
@@ -445,39 +438,6 @@ class AdventureDataLayer extends DataLayer {
       }
     } catch (error) {
       throw failedUpdate(error)
-    }
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.adventureId
-   * @returns {Promise<void>}
-   */
-  updateSearchAdventureKeywords({ keyword, adventureId }) {
-    if (!keyword || !adventureId) {
-      throw 'keyword and adventureId fields required'
-    }
-
-    return this.sendQuery(addKeywordStatement, [keyword, adventureId]).catch(
-      failedUpdate
-    )
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.search
-   * @returns {Promise<AdventureObject[]>} a list of adventures matching the given string
-   */
-  async searchDatabaseForAdventureString({ search }) {
-    try {
-      const [allResults] = await this.sendQuery(searchAdventureStatement, [
-        `%${search}%`
-      ])
-
-      return allResults
-    } catch (error) {
-      throw failedQuery(error)
     }
   }
 
@@ -548,6 +508,25 @@ class AdventureDataLayer extends DataLayer {
       }
     } catch (error) {
       throw failedInsertion(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.adventureId
+   * @returns {Promise<Object[]>} a list of objects containing the
+   */
+  async buldBreadcrumb({ adventureId }) {
+    try {
+      const [results] = await this.sendQuery(buildBreadcrumbStatement, [
+        adventureId
+      ])
+      return results.map((result, idx) => ({
+        ...result,
+        category_type: idx === 0 ? 'adventure' : 'zone'
+      }))
+    } catch (error) {
+      throw failedQuery(error)
     }
   }
 }

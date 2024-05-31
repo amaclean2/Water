@@ -27,6 +27,20 @@
       "username": "root",
       "database": "mysql",
       "askForPassword": true
+    },
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "previewLimit": 100,
+      "server": "localhost",
+      "port": 3300,
+      "driver": "MySQL",
+      "name": "SundayPeak Local",
+      "database": "friends",
+      "username": "byf",
+      "askForPassword": true
     }
   ],
   "eslint.alwaysShowStatus": true,
