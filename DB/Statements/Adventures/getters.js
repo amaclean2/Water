@@ -63,16 +63,29 @@ const selectAdventureByIdGroup = {
 }
 // get adventures by distance within a type
 const getCloseAdventures = `SELECT
-    id,
-    adventure_name,
-    adventure_type,
-    difficulty,
-    rating,
-    nearest_city,
-    bio
-    FROM adventures
-    WHERE public = 1 AND adventure_type = ?
-    ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
+  id,
+  adventure_name,
+  adventure_type,
+  difficulty,
+  rating,
+  nearest_city,
+  bio
+  FROM adventures
+  WHERE public = 1 AND adventure_type = ?
+  ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
+
+const getCloseAdventuresGivenZone = `
+  a.id,
+  a.adventure_name,
+  a.adventure_type,
+  a.difficulty,
+  a.rating,
+  a.nearest_city,
+  a.bio
+  FROM adventures AS a
+  INNER JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
+  WHERE public = 1 AND adventure_type = ? AND zi.parent_id != ?
+  ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
 // get an adventure rating and difficulty
 const getAdventureRatingAndDifficulty =
@@ -131,6 +144,7 @@ module.exports = {
   selectAdventureByIdGroup,
   selectSkiApproachStatement,
   getCloseAdventures,
+  getCloseAdventuresGivenZone,
   getAdventureRatingAndDifficulty,
   selectAdventuresStatement,
   getSpecificAdventureId

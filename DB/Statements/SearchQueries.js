@@ -32,7 +32,7 @@ AND u.id != ?`
 // search adventures that aren't the current adventure
 const searchAdventureQuery = `
 SELECT
-id,
+id AS adventure_id,
 adventure_name,
 adventure_type,
 nearest_city

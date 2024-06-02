@@ -24,7 +24,8 @@ const {
   selectSkiApproachStatement,
   buildBreadcrumbStatement,
   updateAdventureGeneralStatement,
-  updateSpecificStatements
+  updateSpecificStatements,
+  getCloseAdventuresGivenZone
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
@@ -253,6 +254,35 @@ class AdventureDataLayer extends DataLayer {
       return results
     } catch (error) {
       return failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {number} params.zoneId
+   * @param {Object} params.coordinates
+   * @param {number} params.coordiantes.lat
+   * @param {number} params.coordiantes.lng
+   * @returns {Promise<Object>} an array of adventures that match up to the given parameters
+   */
+  async getClosestZoneAdventures({
+    adventureType,
+    zoneId,
+    coordinates,
+    count
+  }) {
+    try {
+      const [results] = await this.sendQuery(getCloseAdventuresGivenZone, [
+        adventureType,
+        zoneId,
+        coordinates.lat,
+        coordinates.lng,
+        count
+      ])
+      return results
+    } catch (error) {
+      throw failedQuery(error)
     }
   }
 

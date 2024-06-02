@@ -195,7 +195,7 @@ class AdventureService extends Water {
    * @param {number} params.count
    * @returns {Promise<Object[]>} a list of adventures ordered from closest to the given coordinates within the count limit provided
    */
-  getClosestAdventures({ adventureType, coordinates, count = 10 }) {
+  getClosestAdventures({ adventureType, coordinates, count = 10, zoneId = 0 }) {
     if (!(adventureType && coordinates.lat && coordinates.lng)) {
       throw 'adventureType and coordinates are required'
     }
@@ -215,11 +215,20 @@ class AdventureService extends Water {
       throw `adventureType must be the appropriate type. ['ski', 'climb', 'hike', 'skiApproach', 'bike']`
     }
 
-    return this.adventureDB.getClosestAdventuresFromDB({
-      adventureType,
-      coordinates,
-      count
-    })
+    if (zoneId) {
+      return this.adventureDB.getClosestZoneAdventures({
+        adventureType,
+        coordinates,
+        count,
+        zoneId
+      })
+    } else {
+      return this.adventureDB.getClosestAdventuresFromDB({
+        adventureType,
+        coordinates,
+        count
+      })
+    }
   }
 
   /**

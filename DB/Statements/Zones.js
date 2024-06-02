@@ -58,14 +58,14 @@ WHERE zi.interaction_type = 'zone' AND z.id = ? AND z2.public = 1`
 
 // Get zones by distance
 const getCloseZonesQuery = `SELECT
-  id AS zone_id,
-  zone_name,
-  adventure_type,
-  coordinates_lat,
-  coordinates_lng,
-  nearest_city,
-  bio
-  FROM zones
+  z.id AS zone_id,
+  z.zone_name,
+  z.adventure_type,
+  z.coordinates_lat,
+  z.coordinates_lng,
+  z.nearest_city,
+  z.bio
+  FROM zones AS z
   WHERE public = 1 AND adventure_type = ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
