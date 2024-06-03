@@ -108,6 +108,7 @@ class SearchDataLayer extends DataLayer {
     try {
       const [results] = await this.sendQuery(searchZonesNotInZoneQuery, [
         `"${searchText}"`,
+        parentId,
         parentId
       ])
       return results

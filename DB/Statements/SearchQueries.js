@@ -75,6 +75,7 @@ FROM zones AS z
 INNER JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
 WHERE MATCH(z.zone_name, z.bio, z.nearest_city)
 AGAINST(?)
+AND z.id != ?
 AND zi.parent_id != ?`
 
 module.exports = {

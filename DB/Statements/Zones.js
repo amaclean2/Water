@@ -69,6 +69,21 @@ const getCloseZonesQuery = `SELECT
   WHERE public = 1 AND adventure_type = ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
+// Get zones by distance, excuding child and current zone
+const getCloseSubzonesQuery = `
+SELECT
+  z.id AS zone_id,
+  z.zone_name,
+  z.adventure_type,
+  z.coordinates_lat,
+  z.coordinates_lng,
+  z.nearest_city,
+  z.bio
+  FROM zones AS z
+  INNER JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
+  WHERE public = 1 AND adventure_type = ? AND zi.parent_id != ? AND z.id != ?
+  ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
+
 // Get any parent of a zone
 const getZoneParentQuery =
   'SELECT parent_id AS id FROM zone_interactions WHERE zone_child_id = ?'
@@ -142,6 +157,7 @@ module.exports = {
   getZoneAdventuresQuery,
   getZoneSubzoneQuery,
   getCloseZonesQuery,
+  getCloseSubzonesQuery,
   buildBreadcrumbQuery,
   getZoneParentQuery,
   intersectingAdventureQuery,

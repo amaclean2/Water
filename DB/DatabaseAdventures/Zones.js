@@ -18,7 +18,8 @@ const {
   deleteZoneInteractionsQuery,
   getCloseZonesQuery,
   buildBreadcrumbQuery,
-  editZoneFieldQuery
+  editZoneFieldQuery,
+  getCloseSubzonesQuery
 } = require('../Statements/Zones')
 const {
   failedQuery,
@@ -161,6 +162,51 @@ class ZoneDataLayer extends DataLayer {
 
       const [results] = await this.sendQuery(getCloseZonesQuery, [
         adventureType,
+        coordinatesLat,
+        coordinatesLng,
+        count
+      ])
+
+      return results.map((result) => {
+        const { coordinates_lat, coordinates_lng, ...newResult } = result
+        return {
+          ...newResult,
+          coordinates: {
+            lat: coordinates_lat,
+            lng: coordinates_lng
+          }
+        }
+      })
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {number} params.coordinatesLat
+   * @param {number} params.coordinatesLng
+   * @param {number} params.parentZoneId
+   * @param {number} params.count
+   * @returns {Promise<Object[]>} | a list of zones that are close to the specified coordinates lat and lng
+   */
+  async getZonesExcludingParentByDistance({
+    adventureType,
+    coordinatesLat,
+    coordinatesLng,
+    parentZoneId,
+    count
+  }) {
+    try {
+      logger.info(
+        `fetching zones close to {cLa: ${coordinatesLat}, cLo: ${coordinatesLng}} for adventure type: ${adventureType}`
+      )
+
+      const [results] = await this.sendQuery(getCloseSubzonesQuery, [
+        adventureType,
+        parentZoneId,
+        parentZoneId,
         coordinatesLat,
         coordinatesLng,
         count
