@@ -84,8 +84,8 @@ a.rating,
 a.nearest_city,
 a.bio
 FROM adventures AS a
-INNER JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
-WHERE public = 1 AND adventure_type = ? AND zi.parent_id != ?
+LEFT JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
+WHERE public = 1 AND adventure_type = ? AND (zi.parent_id != ? OR zi.parent_id IS NULL)
 ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
 // get an adventure rating and difficulty
@@ -125,7 +125,7 @@ WITH RECURSIVE parents AS (
   a.adventure_name AS name,
   zi.parent_id
   FROM adventures AS a
-  INNER JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
+  LEFT JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
   WHERE a.id = ?
   UNION ALL
   SELECT
@@ -133,9 +133,9 @@ WITH RECURSIVE parents AS (
   z.adventure_type,
   z.zone_name AS name,
   zi.parent_id
-  FROM parents AS ps
-  INNER JOIN zone_interactions AS zi ON ps.parent_id = zi.zone_child_id
-  INNER JOIN zones AS z ON zi.zone_child_id = z.id
+  FROM zones AS z
+  LEFT JOIN zone_interactions AS zi ON z.id = zi.zone_child_id
+  INNER JOIN parents AS p ON p.parent_id = z.id
 )
 SELECT name, id, adventure_type FROM parents`
 

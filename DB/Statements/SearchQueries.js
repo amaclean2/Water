@@ -48,10 +48,10 @@ a.adventure_name,
 a.adventure_type,
 a.nearest_city
 FROM adventures AS a
-INNER JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
+LEFT JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
 WHERE MATCH(a.adventure_name, a.bio, a.nearest_city)
 AGAINST(?)
-AND zi.parent_id != ?`
+AND (zi.parent_id != ? OR zi.parent_id IS NULL)`
 
 // search zones
 const searchZoneQuery = `
@@ -72,11 +72,11 @@ z.zone_name,
 z.adventure_type,
 z.nearest_city
 FROM zones AS z
-INNER JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
+LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
 WHERE MATCH(z.zone_name, z.bio, z.nearest_city)
 AGAINST(?)
 AND z.id != ?
-AND zi.parent_id != ?`
+AND (zi.parent_id != ? OR zi.parent_id IS NULL)`
 
 module.exports = {
   searchUserQuery,

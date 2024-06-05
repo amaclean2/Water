@@ -17,15 +17,18 @@ FROM zones AS z
 INNER JOIN users AS u ON z.creator_id = u.id
 WHERE z.id = ?`
 
+// Get all the top level zones of an adventure type
 const getAllZonesOfATypeQuery = `
 SELECT
-id,
-zone_name,
-adventure_type,
-coordinates_lat,
-coordinates_lng
-FROM zones
-WHERE adventure_type = ?`
+z.id,
+z.zone_name,
+z.adventure_type,
+z.coordinates_lat,
+z.coordinates_lng,
+zi.parent_id
+FROM zones AS z
+LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
+WHERE adventure_type = 'ski' AND zi.parent_id IS NULL`
 
 // Get zone adventures
 const getZoneAdventuresQuery = `
@@ -35,10 +38,22 @@ a.adventure_name,
 a.id AS adventure_id,
 a.coordinates_lat,
 a.coordinates_lng,
-a.public
+a.public,
+s.trail_path AS ski_path,
+h.trail_path AS hike_path,
+b.trail_path AS bike_path,
+sa.trail_path AS ski_approach_path,
+s.elevations AS ski_elevations,
+h.elevations AS hike_elevations,
+b.elevations AS bike_elevations,
+sa.elevations AS ski_approach_elevations
 FROM zones AS z 
 INNER JOIN zone_interactions AS zi ON zi.parent_id = z.id
 INNER JOIN adventures AS a ON zi.adventure_child_id = a.id
+LEFT JOIN ski AS s ON a.adventure_ski_id = s.id
+LEFT JOIN hike AS h ON a.adventure_hike_id = h.id
+LEFT JOIN bike AS b ON a.adventure_bike_id = b.id
+LEFT JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
 WHERE zi.interaction_type = 'adventure' AND z.id = ? AND a.public = 1`
 
 // Get zone first layer subzones
@@ -80,8 +95,8 @@ SELECT
   z.nearest_city,
   z.bio
   FROM zones AS z
-  INNER JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
-  WHERE public = 1 AND adventure_type = ? AND zi.parent_id != ? AND z.id != ?
+  LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
+  WHERE public = 1 AND adventure_type = ? AND (zi.parent_id != ? OR zi.parent_id IS NULL) AND z.id != ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
 
 // Get any parent of a zone
@@ -132,24 +147,22 @@ WITH RECURSIVE parents AS (
   SELECT
   z.id AS id,
   z.adventure_type,
-  z.zone_name AS name,
+  z.zone_name,
   zi.parent_id
   FROM zones AS z
-  INNER JOIN zone_interactions AS zi ON z.id = zi.zone_child_id
+  LEFT JOIN zone_interactions AS zi ON z.id = zi.zone_child_id
   WHERE z.id = ?
-
   UNION ALL
-
   SELECT
   z.id AS id,
   z.adventure_type,
-  z.zone_name AS name,
+  z.zone_name,
   zi.parent_id
-  FROM parents AS ps
-  INNER JOIN zone_interactions AS zi ON ps.parent_id = zi.zone_child_id
-  INNER JOIN zones AS z ON zi.zone_child_id = z.id
+  FROM zones AS z
+  LEFT JOIN zone_interactions AS zi ON z.id = zi.zone_child_id
+  INNER JOIN parents AS p ON p.parent_id = z.id
 )
-SELECT name, id, adventure_type FROM parents`
+SELECT zone_name AS name, id, adventure_type FROM parents;`
 
 module.exports = {
   getZoneInformationQuery,

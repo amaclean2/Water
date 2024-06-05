@@ -53,6 +53,37 @@ class ZoneDataLayer extends DataLayer {
     }
   }
 
+  #removeUnusedVariables(adventure) {
+    switch (adventure.adventure_type) {
+      case 'ski':
+        adventure.path = JSON.parse(adventure.ski_path)
+        adventure.elevations = JSON.parse(adventure.ski_elevations)
+        break
+      case 'hike':
+        adventure.path = JSON.parse(adventure.hike_path)
+        adventure.elevations = JSON.parse(adventure.hike_elevations)
+        break
+      case 'bike':
+        adventure.path = JSON.parse(adventure.bike_path)
+        adventure.elevations = JSON.parse(adventure.hike_elevations)
+        break
+      case 'skiApproach':
+        adventure.path = JSON.parse(adventure.ski_approach_path)
+        adventure.elevations = JSON.parse(adventure.ski_approach_elevations)
+        break
+    }
+
+    delete adventure.ski_path
+    delete adventure.hike_path
+    delete adventure.bike_path
+    delete adventure.ski_approach_path
+
+    delete adventure.ski_elevations
+    delete adventure.hike_elevations
+    delete adventure.bike_elevations
+    delete adventure.ski_approach_elevations
+  }
+
   /**
    * @param {Object} params
    * @param {number} params.zoneId
@@ -63,7 +94,20 @@ class ZoneDataLayer extends DataLayer {
       const [zoneAdventures] = await this.sendQuery(getZoneAdventuresQuery, [
         zoneId
       ])
-      return zoneAdventures
+
+      return zoneAdventures.map((adventure) => {
+        this.#removeUnusedVariables(adventure)
+
+        adventure.coordinates = {
+          lat: adventure.coordinates_lat,
+          lng: adventure.coordinates_lng
+        }
+
+        delete adventure.coordinates_lat
+        delete adventure.coordinates_lng
+
+        return adventure
+      })
     } catch (error) {
       throw failedQuery(error)
     }
@@ -77,7 +121,20 @@ class ZoneDataLayer extends DataLayer {
   async getZoneSubzones({ zoneId }) {
     try {
       const [zoneSubzones] = await this.sendQuery(getZoneSubzoneQuery, [zoneId])
-      return zoneSubzones
+      return zoneSubzones.map((subZone) => {
+        const modifiedZone = {
+          ...subZone,
+          coordinates: {
+            lat: subZone.coordinates_lat,
+            lng: subZone.coordinates_lng
+          }
+        }
+
+        delete modifiedZone.coordinates_lat
+        delete modifiedZone.coordinates_lng
+
+        return modifiedZone
+      })
     } catch (error) {
       throw failedQuery(error)
     }
