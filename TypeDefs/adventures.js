@@ -3,7 +3,7 @@
  * @property {string} adventure_type
  * @property {string} adventure_name
  * @property {string} nearest_city
- * @property {string} public
+ * @property {boolean} public
  * @property {string} creator_id
  * @property {string} coordinates_lat
  * @property {string} coordinates_lng

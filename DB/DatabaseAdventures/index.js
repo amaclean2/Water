@@ -34,7 +34,9 @@ const {
   parseAdventures,
   createSpecificProperties,
   getGeneralFields,
-  pathAdventures
+  pathAdventures,
+  removeUnusedVariables,
+  splitPath
 } = require('./utils')
 const {
   failedInsertion,
@@ -192,6 +194,8 @@ class AdventureDataLayer extends DataLayer {
         return null
       }
 
+      selectedAdventure.public = Boolean(selectedAdventure.public)
+
       // convert the stringified path back to an object
       // pathAdventures are any adventures that would have a path/elevations property
       if (
@@ -201,15 +205,10 @@ class AdventureDataLayer extends DataLayer {
       ) {
         // splitting the array around a point that's [0]. This point is there to split the
         // path shown on the map with the points used to edit the path
-        const pathArr = JSON.parse(selectedAdventure.path ?? '[]')
-        const splitIdx = pathArr?.findIndex((e) => e.length === 1)
-        if (splitIdx !== -1) {
-          selectedAdventure.path = pathArr.slice(0, splitIdx)
-          selectedAdventure.points = pathArr.slice(splitIdx + 1)
-        } else {
-          selectedAdventure.path = pathArr
-          selectedAdventure.points = []
-        }
+
+        const [path, points] = splitPath(selectedAdventure.path ?? '[]')
+        selectedAdventure.path = path
+        selectedAdventure.points = points
 
         selectedAdventure.elevations = JSON.parse(
           selectedAdventure.elevations ?? '[]'
@@ -304,33 +303,27 @@ class AdventureDataLayer extends DataLayer {
 
       logger.info(`selecting all results for adventure type: ${adventureType}`)
 
-      const formattedResults = results.map(formatAdventureForGeoJSON)
+      const formattedResults = formatAdventureForGeoJSON(
+        results.map((rs) => removeUnusedVariables(rs))
+      )
 
       if (adventureType === 'ski') {
-        const approachResultList = await this.sendQuery(
+        const [skiApproachResults] = await this.sendQuery(
           selectSkiApproachStatement
         )
 
-        logger.info('results selected')
-
-        const skiApproachResults = approachResultList[0]
+        logger.info('ski results fetched')
 
         return {
-          ski: {
-            type: 'FeatureCollection',
-            features: formattedResults
-          },
-          skiApproach: {
-            type: 'FeatureCollection',
-            features: skiApproachResults.map(formatAdventureForGeoJSON)
-          }
+          ski: formattedResults,
+          skiApproach: formatAdventureForGeoJSON(
+            skiApproachResults.map((sa) => removeUnusedVariables(sa))
+          )
         }
       } else {
+        logger.info('non-ski results fetched')
         return {
-          [adventureType]: {
-            type: 'FeatureCollection',
-            features: formattedResults
-          }
+          [adventureType]: formattedResults
         }
       }
     } catch (error) {
@@ -445,7 +438,7 @@ class AdventureDataLayer extends DataLayer {
 
         await this.sendQuery(updateAdventureGeneralStatement, [
           field.name,
-          field.value,
+          field.name === 'public' ? +field.value : field.value,
           field.adventure_id
         ])
 

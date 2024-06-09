@@ -28,7 +28,7 @@ z.coordinates_lng,
 zi.parent_id
 FROM zones AS z
 LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
-WHERE adventure_type = 'ski' AND zi.parent_id IS NULL`
+WHERE adventure_type = ? AND zi.parent_id IS NULL`
 
 // Get zone adventures
 const getZoneAdventuresQuery = `
@@ -42,11 +42,7 @@ a.public,
 s.trail_path AS ski_path,
 h.trail_path AS hike_path,
 b.trail_path AS bike_path,
-sa.trail_path AS ski_approach_path,
-s.elevations AS ski_elevations,
-h.elevations AS hike_elevations,
-b.elevations AS bike_elevations,
-sa.elevations AS ski_approach_elevations
+sa.trail_path AS ski_approach_path
 FROM zones AS z 
 INNER JOIN zone_interactions AS zi ON zi.parent_id = z.id
 INNER JOIN adventures AS a ON zi.adventure_child_id = a.id

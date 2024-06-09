@@ -27,6 +27,7 @@ const {
   failedUpdate,
   failedDeletion
 } = require('../utils')
+const { removeUnusedVariables } = require('./utils')
 
 class ZoneDataLayer extends DataLayer {
   /**
@@ -40,6 +41,8 @@ class ZoneDataLayer extends DataLayer {
         zoneId
       ])
 
+      if (!zoneData) return {}
+
       zoneData.coordinates = {
         lat: zoneData.coordinates_lat,
         lng: zoneData.coordinates_lng
@@ -47,41 +50,12 @@ class ZoneDataLayer extends DataLayer {
       delete zoneData.coordinates_lat
       delete zoneData.coordinates_lng
 
+      zoneData.public = Boolean(zoneData.public)
+
       return zoneData
     } catch (error) {
       throw failedQuery(error)
     }
-  }
-
-  #removeUnusedVariables(adventure) {
-    switch (adventure.adventure_type) {
-      case 'ski':
-        adventure.path = JSON.parse(adventure.ski_path)
-        adventure.elevations = JSON.parse(adventure.ski_elevations)
-        break
-      case 'hike':
-        adventure.path = JSON.parse(adventure.hike_path)
-        adventure.elevations = JSON.parse(adventure.hike_elevations)
-        break
-      case 'bike':
-        adventure.path = JSON.parse(adventure.bike_path)
-        adventure.elevations = JSON.parse(adventure.hike_elevations)
-        break
-      case 'skiApproach':
-        adventure.path = JSON.parse(adventure.ski_approach_path)
-        adventure.elevations = JSON.parse(adventure.ski_approach_elevations)
-        break
-    }
-
-    delete adventure.ski_path
-    delete adventure.hike_path
-    delete adventure.bike_path
-    delete adventure.ski_approach_path
-
-    delete adventure.ski_elevations
-    delete adventure.hike_elevations
-    delete adventure.bike_elevations
-    delete adventure.ski_approach_elevations
   }
 
   /**
@@ -96,7 +70,7 @@ class ZoneDataLayer extends DataLayer {
       ])
 
       return zoneAdventures.map((adventure) => {
-        this.#removeUnusedVariables(adventure)
+        removeUnusedVariables(adventure)
 
         adventure.coordinates = {
           lat: adventure.coordinates_lat,
@@ -161,20 +135,22 @@ class ZoneDataLayer extends DataLayer {
 
   async getAdventureZoneMatch({ adventureId, zoneId }) {
     try {
-      const [[results]] = await this.sendQuery(intersectingAdventureQuery, [
+      const [[result]] = await this.sendQuery(intersectingAdventureQuery, [
         adventureId,
         zoneId
       ])
 
+      if (!result) return null
+
       logger.info(
-        `adventure type is ${results.adventure_type} and zone type is ${results.zone_adventure_type}`
+        `adventure type is ${result.adventure_type} and zone type is ${result.zone_adventure_type}`
       )
 
       // ski approach adventures can go in the ski zone
       return (
-        results.zone_adventure_type === results.adventure_type ||
-        (results.zone_adventure_type === 'ski' &&
-          results.adventure_type === 'skiApproach')
+        result.zone_adventure_type === result.adventure_type ||
+        (result.zone_adventure_type === 'ski' &&
+          result.adventure_type === 'skiApproach')
       )
     } catch (error) {
       throw failedQuery(error)
@@ -332,15 +308,15 @@ class ZoneDataLayer extends DataLayer {
         public: isPublic
       } = newZone
 
-      const queryParams = {
+      const queryParams = [
         zoneName,
         adventureType,
         coordinatesLat,
         coordinatesLng,
         creatorId,
         nearestCity,
-        isPublic
-      }
+        +isPublic
+      ]
 
       for (let param in queryParams) {
         if (queryParams[param] === undefined) {
@@ -349,7 +325,7 @@ class ZoneDataLayer extends DataLayer {
       }
 
       const [{ insertId }] = await this.sendQuery(createZoneQuery, [
-        [Object.values(queryParams)]
+        [queryParams]
       ])
 
       const createdZone = {
@@ -383,7 +359,7 @@ class ZoneDataLayer extends DataLayer {
 
       const something = await this.sendQuery(editZoneFieldQuery, [
         zoneProperty,
-        zoneValue,
+        zoneProperty === 'public' ? +zoneValue : zoneValue,
         zoneId
       ])
       return something

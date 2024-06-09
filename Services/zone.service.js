@@ -19,7 +19,7 @@ class ZoneService extends Water {
    * @property {number} coordinatesLng
    * @property {number} creatorId
    * @property {string} nearestCity
-   * @property {number} public
+   * @property {boolean} public
    */
 
   /**

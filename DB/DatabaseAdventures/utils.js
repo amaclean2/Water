@@ -12,44 +12,97 @@ const {
   createNewApproachStatement
 } = require('../Statements')
 
-const formatAdventureForGeoJSON = (adventure) => {
-  let newAdventure
-  if (adventure.adventure_type === 'skiApproach') {
-    newAdventure = {
-      type: 'Feature',
-      id: adventure.id,
-      geometry: {
-        type: 'LineString',
-        coordinates: JSON.parse(adventure.trail_path ?? '[]')
-      },
-      properties: {
-        adventure_name: adventure.adventure_name,
-        adventure_type: 'skiApproach',
-        id: adventure.id,
-        public: !!adventure.public
-      }
-    }
-  } else {
-    newAdventure = {
-      type: 'Feature',
-      id: adventure.id,
-      geometry: {
-        type: 'Point',
-        coordinates: [adventure.coordinates_lng, adventure.coordinates_lat]
-      },
-      properties: {
-        adventure_name: adventure.adventure_name,
-        adventure_type: adventure.adventure_type,
-        id: adventure.id,
-        public: !!adventure.public
-      }
+const formatAdventureForGeoJSON = (adventures) => {
+  const pointAdventures = []
+  const lineAdventures = []
+
+  for (let adventure of adventures) {
+    if (
+      [undefined, null].includes(adventure.path) ||
+      adventure.path.length === 0
+    ) {
+      pointAdventures.push(adventure)
+    } else {
+      lineAdventures.push(adventure)
     }
   }
 
-  delete newAdventure.properties.coordinates_lat
-  delete newAdventure.properties.coordinates_lng
+  return {
+    points: {
+      type: 'FeatureCollection',
+      features: pointAdventures.map((point) => ({
+        type: 'Feature',
+        id: point.adventure_id,
+        properties: {
+          adventureType: point.adventure_type,
+          adventureName: point.adventure_name
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [point.coordinates_lng, point.coordiantes_lat]
+        }
+      }))
+    },
+    lines: {
+      type: 'FeatureCollection',
+      features: lineAdventures.map((line) => ({
+        type: 'Feature',
+        id: line.adventure_id,
+        properties: {
+          adventureType: line.adventure_type,
+          adventureName: line.adventure_name
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: line.path
+        }
+      }))
+    }
+  }
+}
 
-  return newAdventure
+const splitPath = (pathStr = '[]') => {
+  // splitting the array around a point that's [0]. This point is there to split the
+  // path shown on the map with the points used to edit the path
+  let newPath, newPoints
+  const pathArr = JSON.parse(pathStr)
+
+  if (!pathArr) return []
+
+  const splitIdx = pathArr?.findIndex((e) => e.length === 1)
+  if (splitIdx !== -1) {
+    newPath = pathArr.slice(0, splitIdx)
+    newPoints = pathArr.slice(splitIdx + 1)
+  } else {
+    newPath = pathArr
+    newPoints = []
+  }
+
+  return [newPath, newPoints]
+}
+
+const removeUnusedVariables = (adventure) => {
+  switch (adventure.adventure_type) {
+    case 'ski':
+      adventure.path = splitPath(adventure.ski_path)[0]
+      break
+    case 'hike':
+      adventure.path = splitPath(adventure.hike_path)[0]
+      break
+    case 'bike':
+      adventure.path = splitPath(adventure.bike_path)[0]
+      break
+    case 'skiApproach':
+      adventure.path = splitPath(adventure.ski_approach_path)[0]
+      break
+  }
+
+  delete adventure.ski_path
+  delete adventure.hike_path
+  delete adventure.bike_path
+  delete adventure.ski_approach_path
+
+  return adventure
 }
 
 // all properties below must be in order of the database query
@@ -121,7 +174,7 @@ const getGeneralFields = (adventure) => {
     adventure.coordinates_lng,
     adventure.creator_id,
     adventure.nearest_city,
-    adventure.public,
+    +adventure.public,
     adventure.rating || '0:0',
     adventure.difficulty || '0:0'
   ]
@@ -231,6 +284,8 @@ module.exports = {
   getPropsToImport,
   parseAdventures,
   createSpecificProperties,
+  removeUnusedVariables,
+  splitPath,
   adventureTemplate,
   pathAdventures
 }

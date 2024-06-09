@@ -76,7 +76,7 @@ const getCloseAdventures = `SELECT
 
 const getCloseAdventuresGivenZone = `
 SELECT
-a.id,
+a.id AS adventure_id,
 a.adventure_name,
 a.adventure_type,
 a.difficulty,
@@ -92,8 +92,26 @@ ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIM
 const getAdventureRatingAndDifficulty =
   'SELECT rating, difficulty, id AS adventure_id, adventure_type FROM adventures WHERE id = ?'
 
-const selectAdventuresStatement =
-  'SELECT id, adventure_name, adventure_type, public, coordinates_lat, coordinates_lng FROM adventures WHERE adventure_type = ? AND public = 1'
+// get al adventures pertaining to a given type which don't have a parent zone
+const selectAdventuresStatement = `SELECT
+a.adventure_type,
+a.adventure_name,
+a.id AS adventure_id,
+a.coordinates_lat,
+a.coordinates_lng,
+a.public,
+s.trail_path AS ski_path,
+h.trail_path AS hike_path,
+b.trail_path AS bike_path,
+sa.trail_path AS ski_approach_path
+FROM adventures AS a
+LEFT JOIN ski AS s ON a.adventure_ski_id = s.id
+LEFT JOIN hike AS h ON a.adventure_hike_id = h.id
+LEFT JOIN bike AS b ON a.adventure_bike_id = b.id
+LEFT JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
+LEFT JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
+WHERE a.adventure_type = ? AND a.public = 1 AND zi.parent_id IS NULL`
+
 const selectSkiApproachStatement = `
   SELECT
   a.id,

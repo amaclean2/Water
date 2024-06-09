@@ -69,7 +69,7 @@ class AdventureService extends Water {
       breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
-      public: !!adventure.public,
+      public: Boolean(adventure.public),
       coordinates: {
         lat: adventure.coordinates_lat,
         lng: adventure.coordinates_lng
@@ -386,7 +386,6 @@ class AdventureService extends Water {
         let allAdventures = await this.getAdventureList({
           adventureType: field.adventure_type
         })
-        this.adventureCache.put(field.adventure_type, allAdventures)
 
         logger.info(`database update finished on ${field.adventure_id}`)
 

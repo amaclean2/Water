@@ -9,6 +9,8 @@ const createNewBikeAdventureStatement =
   'INSERT INTO adventures (adventure_bike_id, adventure_name, adventure_type, bio, coordinates_lat, coordinates_lng, creator_id, nearest_city, public, rating, difficulty) VALUES ?'
 const createNewSkiApproachStatement =
   'INSERT INTO adventures (ski_approach_id, adventure_name, adventure_type, bio, coordinates_lat, coordinates_lng, creator_id, nearest_city, public, rating, difficulty) VALUES ?'
+
+// new specific statements
 const createNewSkiStatement =
   'INSERT INTO ski (avg_angle, max_angle, aspect, summit_elevation, base_elevation, exposure, season, trail_path, elevations) VALUES ?'
 const createNewClimbStatement =
