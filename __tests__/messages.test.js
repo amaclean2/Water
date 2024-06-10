@@ -9,41 +9,54 @@ describe('message service layer testing', () => {
     serviceHandler = new SundayService(
       {
         host: 'localhost',
-        user: 'byf',
-        password: 'backyard',
+        user: 'root',
+        password: 'skiing',
         database: 'test_messages',
-        port: '3306'
+        port: '3310'
       },
       'secret'
     )
 
     await serviceHandler.createTables()
 
-    let newUser = await serviceHandler.userService.addNewUser({
-      email: 'andrew@email.com',
-      password: 'skiing',
-      confirmPassword: 'skiing',
-      firstName: 'Andrew',
-      lastName: 'Maclean'
-    })
+    const mockEmailCallback = jest.fn(() =>
+      Promise.resolve({ email: '', displayName: '' })
+    )
+
+    let newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'andrew@email.com',
+        password: 'skiing',
+        confirmPassword: 'skiing',
+        firstName: 'Andrew',
+        lastName: 'Maclean'
+      },
+      mockEmailCallback
+    )
     firstUser = newUser.user
 
-    newUser = await serviceHandler.userService.addNewUser({
-      email: 'mark@email.com',
-      password: 'cycling',
-      confirmPassword: 'cycling',
-      firstName: 'Mark',
-      lastName: 'Cavendish'
-    })
+    newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'mark@email.com',
+        password: 'cycling',
+        confirmPassword: 'cycling',
+        firstName: 'Mark',
+        lastName: 'Cavendish'
+      },
+      mockEmailCallback
+    )
     secondUser = newUser.user
 
-    newUser = await serviceHandler.userService.addNewUser({
-      email: 'jessee@email.com',
-      password: 'running',
-      confirmPassword: 'running',
-      firstName: 'Jessee',
-      lastName: 'Thomas'
-    })
+    newUser = await serviceHandler.userService.addNewUser(
+      {
+        email: 'jessee@email.com',
+        password: 'running',
+        confirmPassword: 'running',
+        firstName: 'Jessee',
+        lastName: 'Thomas'
+      },
+      mockEmailCallback
+    )
     thirdUser = newUser.user
   })
   afterAll(async () => {
@@ -60,29 +73,29 @@ describe('message service layer testing', () => {
         userIds: [firstUser.id, secondUser.id]
       })
 
-    expect(newConversationResponse.conversationId).toBeDefined()
-    firstConversationId = newConversationResponse.conversationId
+    expect(newConversationResponse.conversation_id).toBeDefined()
+    firstConversationId = newConversationResponse.conversation_id
 
     newConversationResponse =
       await serviceHandler.messagingService.createConversation({
         userIds: [secondUser.id, thirdUser.id]
       })
 
-    expect(newConversationResponse.conversationId).toBeDefined()
+    expect(newConversationResponse.conversation_id).toBeDefined()
 
     newConversationResponse =
       await serviceHandler.messagingService.createConversation({
         userIds: [firstUser.id, thirdUser.id]
       })
 
-    expect(newConversationResponse.conversationId).toBeDefined()
+    expect(newConversationResponse.conversation_id).toBeDefined()
 
     newConversationResponse =
       await serviceHandler.messagingService.createConversation({
         userIds: [firstUser.id, secondUser.id, thirdUser.id]
       })
 
-    expect(newConversationResponse.conversationId).toBeDefined()
+    expect(newConversationResponse.conversation_id).toBeDefined()
   })
 
   test('gets all the conversations relevant to a user', async () => {
@@ -148,7 +161,7 @@ describe('message service layer testing', () => {
     )
   })
 
-  test.skip('gets all the messages for a conversation', async () => {
+  test('gets all the messages for a conversation', async () => {
     const userId = secondUser.id
     const conversationId = firstConversationId
     const messagesResponse =
@@ -159,6 +172,7 @@ describe('message service layer testing', () => {
 
     expect(messagesResponse.length).toBe(2)
   })
+
   test('creating a new conversation returns the id of the already made conversation if one exists between those users', async () => {
     let newConversationResponse =
       await serviceHandler.messagingService.createConversation({

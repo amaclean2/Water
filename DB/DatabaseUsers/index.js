@@ -10,16 +10,15 @@ const {
   checkPasswordResetTokenStatement,
   updateNewPasswordStatement,
   getFriendsStatement,
-  findNewFriendStatement,
-  findFromFriendsStatement,
-  insertSearchableStatement,
-  getSearchFields,
   getPasswordHashStatement,
   getIsFriendStatement,
   createUserPictureStatement,
   getUserPicturesStatement,
-  deletePictureStatement
+  deletePictureStatement,
+  optOutOfEmailStatement,
+  updateUserStatement
 } = require('../Statements')
+const { selectDeviceTokenForUserStatement } = require('../Statements/Messages')
 const {
   failedInsertion,
   failedQuery,
@@ -170,31 +169,6 @@ class UserDataLayer extends DataLayer {
   }
 
   /**
-   *
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.userId
-   * @returns {Promise} void
-   */
-  updateSearchUserKeywords({ keyword, userId }) {
-    return this.sendQuery(insertSearchableStatement, [keyword, userId]).catch(
-      failedInsertion
-    )
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @returns {Promise} a list of any users that match the provided string
-   */
-  searchDatabaseForUserString({ keyword }) {
-    return this.sendQuery(findNewFriendStatement, [`%${keyword}%`])
-      .then(([results]) => results)
-      .catch(failedQuery)
-  }
-
-  /**
    * @param {Object} params
    * @param {string} params.url
    * @param {number} params.userId
@@ -236,23 +210,6 @@ class UserDataLayer extends DataLayer {
   /**
    *
    * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.userId
-   * @returns {Promise} a list of any friends of the user that match the provided string
-   */
-  searchFriendString({ keywords, userId }) {
-    return this.sendQuery(findFromFriendsStatement, [
-      userId,
-      userId,
-      `%${keywords}%`
-    ])
-      .then(([results]) => results)
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
    * @param {number} params.userId
    * @returns {Promise<FriendObject[]>} the list of friends of the given user
    */
@@ -266,17 +223,41 @@ class UserDataLayer extends DataLayer {
                 display_name: result.follower_display_name,
                 first_name: result.follower_first_name,
                 profile_picture_url: result.follower_picture ?? '',
-                email: result.follower_email
+                email: result.follower_email,
+                email_opt_out: result.follower_email_opt
               }
             : {
                 user_id: result.leader_id,
                 display_name: result.leader_display_name,
                 first_name: result.leader_first_name,
                 profile_picture_url: result.leader_picture ?? '',
-                email: result.leader_email
+                email: result.leader_email,
+                email_opt_out: result.leader_email_opt
               }
         )
       )
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.userEmail
+   * @returns {Promise<string>} | a validation string that the user opt out variable was switched
+   */
+  switchEmailOpt({ userEmail }) {
+    return this.sendQuery(optOutOfEmailStatement, [userEmail])
+      .then(() => 'user opted out successfully')
+      .catch(failedUpdate)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<number>} | return the device token for the user if it exists, otherwise null
+   */
+  getDeviceTokenPerUser({ userId }) {
+    return this.sendQuery(selectDeviceTokenForUserStatement, [userId])
+      .then(([results]) => (results.length ? results[0] : null))
       .catch(failedQuery)
   }
 
@@ -286,13 +267,15 @@ class UserDataLayer extends DataLayer {
    * @param {string} params.fieldName
    * @param {string} params.fieldValue
    * @param {number} params.userId
-   * @returns {Promise} the modified user
+   * @returns {Promise<void>} an update status
    */
-  updateDatabaseUser({ fieldName, fieldValue, userId }) {
-    return this.sendQuery(updateUserStatements[fieldName], [fieldValue, userId])
-      .then(() => this.sendQuery(getSearchFields, [userId]))
-      .then(([[result]]) => result)
-      .catch(failedUpdate)
+  async updateDatabaseUser({ fieldName, fieldValue, userId }) {
+    try {
+      await this.sendQuery(updateUserStatement, [fieldName, fieldValue, userId])
+      return 'update success'
+    } catch (error) {
+      throw failedUpdate(error)
+    }
   }
 
   /**

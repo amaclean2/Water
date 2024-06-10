@@ -1,7 +1,6 @@
 const fs = require('fs')
 const Water = require('.')
-const { handleEmailUserFollowed } = require('./utils/email')
-const SearchService = require('./search.service')
+const { handleEmailUserFollowed, handleNewUserEmail } = require('./utils/email')
 const MessagingService = require('./messages.service')
 const { comparePassword, hashPassword } = require('./utils/crypto')
 const {
@@ -12,11 +11,11 @@ const {
   removeImage
 } = require('./utils/sharp')
 const logger = require('../Config/logger')
+const { createAPNNotification } = require('./utils/notifications')
 
 class UserService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
     this.message = new MessagingService(sendQuery, jwtSecret)
   }
 
@@ -45,7 +44,7 @@ class UserService extends Water {
     }
 
     let userObject
-    let derivedId = id ? id : null
+    let derivedId = id ?? null
 
     if (id) {
       userObject = await this.userDB.getUserById({ userId: id })
@@ -79,6 +78,7 @@ class UserService extends Water {
       ...userObject,
       friends,
       images,
+      email_opt_out: !!userObject.email_opt_out,
       completed_adventures: completedAdventures.map((activity) => ({
         ...activity,
         user_id: activity.creator_id
@@ -100,32 +100,52 @@ class UserService extends Water {
    * @param {string} params.firstName | user first_name
    * @param {string} params.lastName | user last_name
    * @param {boolean} params.native | stores in the token whether the connected client is an app or a web page
+   * @param {function} testEmailCallback | don't send an actual email when testing
    * @returns {Promise<NewUserResponse>} an object containing a new user and a token
    */
-  async addNewUser({
-    email,
-    password,
-    confirmPassword,
-    firstName,
-    lastName,
-    baseImageUrl,
-    native
-  }) {
+  async addNewUser(
+    {
+      email,
+      password,
+      confirmPassword,
+      firstName,
+      lastName,
+      baseImageUrl,
+      native
+    },
+    testEmailCallback
+  ) {
     try {
+      // native is a variable that identifies the user client
+      if (!native) {
+        logger.error(
+          '`native` should be present anytime a new token is being created. This enables the server to process a token as a native device or a website'
+        )
+      }
+
+      // if the passwords don't match, fail back to the client
+      logger.info('checking password match')
       if (password !== confirmPassword) {
         throw 'passwords do not match'
       }
+
+      // if the passwords aren't formatted correctly, fail back to the client
       if (password.length < 5 || password.length > 50) {
         throw 'password length must be between 5 and 50 characters'
       }
 
+      // salt and hash the password so we don't store plain text passwords in our database
       const hashedPassword = hashPassword(password)
 
+      // check if the user already exists, if so, fail back to the client
+      logger.info('checking user exists')
       const userExists = await this.userDB.checkIfUserExistsByEmail({ email })
       if (userExists) {
         throw 'An account with this email aready exists. Please try a different email or login with that account.'
       }
 
+      // if everything above checks out, create the user
+      logger.info('service add new user')
       const { userId } = await this.userDB.addUserToDatabase({
         email,
         firstName,
@@ -133,6 +153,10 @@ class UserService extends Water {
         password: hashedPassword
       })
 
+      logger.info(`userId returned: ${userId}`)
+
+      // the user needs a picture for their profile, create a default one
+      logger.info('creating default picture')
       let profileImageUrl
       if (process.env.NODE_ENV === 'production') {
         const { fileName } = await createDefaultProfilePicture({
@@ -142,15 +166,18 @@ class UserService extends Water {
 
         profileImageUrl = `${baseImageUrl}profile/${fileName}`
 
+        // update the user with the picture
         await this.userDB.updateDatabaseUser({
           userId,
           fieldName: 'profile_picture_url',
           fieldValue: profileImageUrl
         })
       } else {
+        // if this isn't a production environment, screw it
         profileImageUrl = ''
       }
 
+      // build the new user object with the data provided
       const user = await this.#buildUserObject({
         initiation: {
           providedObject: {
@@ -164,23 +191,42 @@ class UserService extends Water {
         }
       })
 
-      this.search.saveUserKeywords({
-        searchableFields: user,
-        userId
+      // send a message to the user introducing them to the app
+      logger.info('creating new introduction conversation')
+      if (process.env.ADMIN_ID) {
+        const { conversation_id } = await this.message.createConversation({
+          userIds: [userId, process.env.ADMIN_ID]
+        })
+
+        await this.message.sendMessage({
+          conversationId: conversation_id,
+          senderId: process.env.ADMIN_ID,
+          messageBody: fs.readFileSync(process.env.PATH_TO_INTRO_TEXT, 'utf-8'),
+          dataReference: ''
+        })
+      } else {
+        logger.info('skip creating an intro message for testing')
+      }
+
+      // if this is a test environment, don't send an email
+      const callback = testEmailCallback ?? handleNewUserEmail
+
+      // send an email to the new user indicating an account was created
+      callback({
+        email,
+        displayName: `${firstName} ${lastName}`
       })
 
-      const { conversation_id } = await this.message.createConversation({
-        userIds: [userId, process.env.ADMIN_ID]
-      })
+      // issue an auth token for the new session
+      const authToken = this.auth.issue({ id: userId, native: native ?? false })
 
-      await this.message.sendMessage({
-        conversationId: conversation_id,
-        senderId: process.env.ADMIN_ID,
-        messageBody: fs.readFileSync(process.env.PATH_TO_INTRO_TEXT, 'utf-8'),
-        dataReference: ''
-      })
+      logger.info('auth token created')
 
-      return { user, token: this.auth.issue({ id: userId, native }) }
+      // return the user and the auth token
+      return {
+        user,
+        token: authToken
+      }
     } catch (error) {
       logger.error(error)
     }
@@ -226,36 +272,15 @@ class UserService extends Water {
    * @param {number} params.id | user id required to get user
    * @returns {Promise<UserObject>}
    */
-  getUserFromId({ userId }) {
-    return this.#buildUserObject({ initiation: { id: userId } }).then(
-      (user) => {
-        delete user.phone
-        return user
-      }
-    )
-  }
-
-  /**
-   * @param {*} params
-   * @param {string} params.searchString | the string to use in the search
-   * @returns {Promise<UserObject[]>} | an array of users that match the search text
-   */
-  searchForUsers({ searchString }) {
-    if (!searchString?.length) return []
-
-    return this.search.userSearch({ keystring: searchString })
-  }
-
-  /**
-   * @param {*} params
-   * @param {string} params.searchString | the string to use in the search
-   * @param {number} params.userId | the is of the user to search for friends of
-   * @returns {Promise<UserObject[]>} an array of friends that match the search text
-   */
-  searchForFriends({ searchString, userId }) {
-    if (!searchString?.length) return []
-
-    return this.search.userSearch({ keystring: searchString, userId })
+  async getUserFromId({ userId }) {
+    try {
+      const user = await this.#buildUserObject({ initiation: { id: userId } })
+      delete user.phone
+      return user
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 
   /**
@@ -265,23 +290,65 @@ class UserService extends Water {
    * @param {FriendEmailCallback} [testEmailCallback] | in jest this can be replaced with a mock
    * @returns {Promise<UserObject>} the following user with the new friends list
    */
-  friendUser(ids, testEmailCallback) {
-    return this.userDB.createUserFollowing(ids).then(() =>
-      this.#buildUserObject({ initiation: { id: ids.followerId } }).then(
-        (user) => {
-          const newFriend = user.friends.find(
-            ({ user_id }) => user_id === ids.leaderId
-          )
+  async friendUser(ids, testEmailCallback) {
+    // follow the new user
+    await this.userDB.createUserFollowing(ids)
 
-          const callback = testEmailCallback || handleEmailUserFollowed
+    // rebuild the user object
+    const user = await this.#buildUserObject({
+      initiation: { id: ids.followerId }
+    })
 
-          return callback({
-            email: newFriend.email,
-            followingUserName: newFriend.display_name
-          }).then(() => user)
-        }
-      )
+    // get the followed user
+    const newFriend = user.friends.find(
+      ({ user_id }) => user_id == ids.leaderId
     )
+
+    // if this is a test case, don't actually send an email
+    const callback = testEmailCallback ?? handleEmailUserFollowed
+
+    // if the user opted out of emails, don't send an email
+    if (!newFriend.email_opt_out) {
+      await callback({
+        email: newFriend.email,
+        displayName: newFriend.display_name,
+        followerDisplayName: `${user.first_name} ${user.last_name}`
+      })
+    }
+
+    // get the apns device token for the receiving user
+    const dt = await this.userDB.getDeviceTokenPerUser({
+      userId: newFriend.user_id
+    })
+
+    // if this isn't a test case, send a notification to the receiving user but only if there was a device token returned
+    if (!testEmailCallback && !!dt) {
+      createAPNNotification({
+        messageBody: `${user.first_name} ${user.last_name} has followed you`,
+        deviceTokens: [dt]
+      })
+    }
+
+    return user
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.userEmail
+   * @returns {Promise<string>}
+   */
+  async optOutOfEmail({ userEmail }) {
+    try {
+      if (!userEmail) throw 'userId field is required'
+
+      const resp = await this.userDB.switchEmailOpt({ userEmail })
+
+      logger.info(resp)
+      return resp
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**
@@ -292,11 +359,7 @@ class UserService extends Water {
    * @return {Promise<void>}
    */
   editUser({ userId, fieldName, fieldValue }) {
-    return this.userDB
-      .updateDatabaseUser({ fieldName, fieldValue, userId })
-      .then((updatedUser) =>
-        this.search.saveUserKeywords({ searchableFields: updatedUser, userId })
-      )
+    return this.userDB.updateDatabaseUser({ fieldName, fieldValue, userId })
   }
 
   /**
@@ -373,6 +436,7 @@ class UserService extends Water {
    * @param {string} params.url
    * @param {number} params.userId
    * @param {number} params.adventureId
+   * @returns {Promise<void>}
    */
   async saveImage({ file, url, userId, adventureId, profilePicture }) {
     if (!userId || !url) {
@@ -419,21 +483,22 @@ class UserService extends Water {
    * @param {number} params.userId
    * @returns {Promise<void>}
    */
-  removeProfileImage({ userId, oldUrl }) {
-    return removeImage({ url: oldUrl })
-      .then(() =>
-        createDefaultProfilePicture({
-          directory: process.env.FILE_STORAGE_PATH,
-          userId
-        })
-      )
-      .then(({ fileName }) =>
-        this.userDB.updateDatabaseUser({
-          userId,
-          fieldName: 'profile_picture_url',
-          fieldValue: `${oldUrl.split('/profile').shift()}/profile/${fileName}`
-        })
-      )
+  async removeProfileImage({ userId, oldUrl }) {
+    try {
+      await removeImage({ url: oldUrl })
+      const { fileName } = await createDefaultProfilePicture({
+        directory: process.env.FILE_STORAGE_PATH,
+        userId
+      })
+      await this.userDB.updateDatabaseUser({
+        userId,
+        fieldName: 'profile_picture_url',
+        fieldValue: `${oldUrl.split('/profile').shift()}/profile/${fileName}`
+      })
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 
   /**
@@ -456,7 +521,7 @@ class UserService extends Water {
       }
 
       await createProfilePicture({ file })
-      return await this.userDB.updateDatabaseUser({
+      await this.userDB.updateDatabaseUser({
         userId,
         fieldName: 'profile_picture_url',
         fieldValue: url

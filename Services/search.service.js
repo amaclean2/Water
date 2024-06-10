@@ -1,133 +1,71 @@
 const Water = require('.')
 const logger = require('../Config/logger')
 
-const stopWords = [
-  'a',
-  'an',
-  'the',
-  'i',
-  'for',
-  'with',
-  'because',
-  'this',
-  'that',
-  'is',
-  'it',
-  'is',
-  'can',
-  'be',
-  'do',
-  'did',
-  'should',
-  'would',
-  'could',
-  'my'
-]
-
 class SearchService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-
-    this.adventureKeywordLibrary = [
-      'adventure_name',
-      'adventure_type',
-      'bio',
-      'creator_name',
-      'nearest_city'
-    ]
-
-    this.userKeywordLibrary = [
-      'first_name',
-      'last_name',
-      'bio',
-      'email',
-      'city'
-    ]
-  }
-
-  parseString(term) {
-    const termArray = term.split(' ')
-    const sanitizedTermArray = new Set(
-      termArray.map((term) => term.replace(/[,-.>!;:]/g, '').toLowerCase())
-    )
-    const removedStopWords = [...sanitizedTermArray].filter(
-      (term) => !stopWords.includes(term)
-    )
-
-    const searchString = removedStopWords.join('')
-    return searchString
-  }
-
-  /**
-   * @param {Object} params
-   * @param {Object} params.searchableFields | all the user fields to be searched
-   * @param {number} params.userId
-   * @returns {Promise<void>}
-   */
-  saveUserKeywords({ searchableFields, userId }) {
-    const searchString = this.userKeywordLibrary
-      .map((key) => {
-        const text = searchableFields[key]
-        return text ? this.parseString(text) : ''
-      })
-      .join('')
-    return this.userDB.updateSearchUserKeywords({
-      keyword: searchString,
-      userId
-    })
   }
 
   /**
    *
    * @param {Object} params
    * @param {string} params.keystring
-   * @param {number} [params.userId] | optional parameter, forces find in friends
-   * @returns
+   * @param {number} params.userId
+   * @param {boolean} params.amongFriends
+   * @returns {Promise<Object[]>} | either a list of users in the friend group of the provided userId or all users that match the search string
    */
-  userSearch({ keystring, userId }) {
-    const parsedString = this.parseString(keystring)
-
-    if (userId) {
-      return this.userDB.searchFriendString({ keywords: parsedString, userId })
-    }
-
-    return this.userDB.searchDatabaseForUserString({ keyword: parsedString })
-  }
-
-  /**
-   * @param {Object} params
-   * @param {Object} params.searchableFields | all the adventure fields to be searched
-   * @param {number} params.adventureId
-   * @returns {Promise<void>}
-   */
-  async saveAdventureKeywords({ searchableFields, adventureId }) {
+  async userSearch({ searchText, userId, amongFriends = false }) {
     try {
-      const searchString = this.adventureKeywordLibrary
-        .map((key) => {
-          const text = searchableFields[key]
-          return text ? this.parseString(text) : ''
-        })
-        .join('')
+      logger.info(`searching for ${searchText}`)
+      logger.info(`searching among friends: ${amongFriends}`)
 
-      logger.info(`saving adventure keywords on ${adventureId}`)
-
-      await this.adventureDB.updateSearchAdventureKeywords({
-        keyword: searchString,
-        adventureId
-      })
-
-      logger.info(`finished saving adventure keywords on ${adventureId}`)
+      return amongFriends
+        ? await this.searchDB.friendSearch({ userId, searchText })
+        : await this.searchDB.userSearch({ userId, searchText })
     } catch (error) {
-      logger.error(error)
+      logger.info(error)
       throw error
     }
   }
 
-  handleAdventureSearch({ search }) {
-    const parsedString = this.parseString(search)
-    return this.adventureDB.searchDatabaseForAdventureString({
-      search: parsedString
-    })
+  /**
+   * @param {Object} params
+   * @param {string} params.searchText
+   * @param {number} params.parentId
+   * @returns {Promise<Object[]>} a list of adventures, with parentId excluding adventures in the current zone, without all adventures matching the search
+   */
+  async adventureSearch({ searchText, parentId }) {
+    try {
+      return parentId
+        ? await this.searchDB.adventureSearchExcludingZone({
+            parentId,
+            searchText
+          })
+        : await this.searchDB.adventureSearch({ searchText })
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.searchText
+   * @param {number} params.parentId
+   * @returns {Promise<Object[]>} a list of zones, if parentId is provided excluding zones inside the given parent, otherwise all zones matching the search string
+   */
+  async zoneSearch({ searchText, parentId }) {
+    try {
+      return parentId
+        ? await this.searchDB.zoneSearchExcludingParent({
+            parentId,
+            searchText
+          })
+        : await this.searchDB.zoneSearch({ searchText })
+    } catch (error) {
+      logger.info(error)
+      throw error
+    }
   }
 }
 

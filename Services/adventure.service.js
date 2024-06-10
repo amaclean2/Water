@@ -1,9 +1,8 @@
 const Water = require('.')
-const SearchService = require('./search.service')
 const { Cache } = require('memory-cache')
-const { updateAdventureCache } = require('./utils/caching')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
+const { splitPath } = require('../DB/DatabaseAdventures/utils')
 
 const CACHE_TIMEOUT = 1000 * 360
 
@@ -15,7 +14,6 @@ const CACHE_TIMEOUT = 1000 * 360
 class AdventureService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.search = new SearchService(sendQuery, jwtSecret)
     this.adventureCache = new Cache()
   }
   /**
@@ -62,13 +60,17 @@ class AdventureService extends Water {
     const images = await this.adventureDB.getAdventureImages({
       adventureId: id
     })
+    const breadcrumb = await this.adventureDB.buldBreadcrumb({
+      adventureId: id
+    })
 
     const formattedAdventure = {
       ...adventure,
       images,
+      breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
-      public: !!adventure.public,
+      public: Boolean(adventure.public),
       coordinates: {
         lat: adventure.coordinates_lat,
         lng: adventure.coordinates_lng
@@ -93,6 +95,7 @@ class AdventureService extends Water {
    * @returns {Promise<CreateAdventureResponse>} | an object containing the adventure and the geojson list
    */
   async createAdventure({ adventureObject }) {
+    logger.info('creating new adventure')
     const adventureId = await this.adventureDB.addAdventure(adventureObject)
     const adventure = await this.#buildAdventureObject({
       id: adventureId,
@@ -100,27 +103,17 @@ class AdventureService extends Water {
       providedObject: adventureObject
     })
 
-    // we need to rebuild the cached adventure list. Since we can do this with data we already have,
-    // it doesn't require another round trip to the database
-    const updatedCacheObject = updateAdventureCache({
-      cacheObject: {
-        ...this.adventureCache.get(adventureObject.adventure_type)
-      },
-      adventureObject: { ...adventureObject, id: adventureId }
-    })
+    logger.info('adventure object built successfully')
 
-    this.adventureCache.put(
-      adventureObject.adventure_type,
-      updatedCacheObject,
-      CACHE_TIMEOUT
-    )
+    // we need to clear the cache since it's now obsolete
+    this.adventureCache.del(adventureObject.adventure_type)
 
-    this.search.saveAdventureKeywords({
-      searchableFields: adventure,
-      id: adventure.id
-    })
-
-    return { adventure, adventureList: updatedCacheObject }
+    return {
+      adventure,
+      adventureList: await this.getAdventureList({
+        adventureType: adventureObject.adventure_type
+      })
+    }
   }
 
   /**
@@ -140,13 +133,6 @@ class AdventureService extends Water {
           []
         )
 
-        for (const adventure in allAdventures) {
-          this.search.saveAdventureKeywords({
-            searchableFields: allAdventures[adventure],
-            id: allAdventures[adventure].id
-          })
-        }
-
         this.adventureCache.clear()
         return allAdventures
       })
@@ -157,31 +143,48 @@ class AdventureService extends Water {
    * @param {string} params.adventureType | the adventure type to get
    * @returns {Promise<AdventureGeoJsonObject>} a list of adventures formatted as geoJson
    */
-  getAdventureList({ adventureType }) {
-    // if there is already a cached adventure list, just return that
-    const cachedResults = this.adventureCache.get(adventureType)
+  async getAdventureList({ adventureType }) {
+    try {
+      // if there is already a cached adventure list, just return that
+      const cachedResults = this.adventureCache.get(adventureType)
+      let approachResults = null
+      if (adventureType === 'ski')
+        approachResults = this.adventureCache.get('skiApproach')
 
-    if (cachedResults) {
-      return cachedResults
-    }
+      if (adventureType !== 'ski' && cachedResults) {
+        return {
+          [adventureType]: cachedResults
+        }
+      } else if (cachedResults && approachResults !== null) {
+        return {
+          ski: cachedResults,
+          skiApproach: approachResults
+        }
+      }
 
-    return this.adventureDB
-      .databaseGetTypedAdventures({ adventureType })
-      .then((adventures) => {
-        this.adventureCache.put(adventureType, adventures, CACHE_TIMEOUT)
-        return adventures
+      const adventures = await this.adventureDB.databaseGetTypedAdventures({
+        adventureType
       })
-  }
 
-  /**
-   * @param {Object} params
-   * @param {string} params.search | the search string to use against the users list
-   * @returns {Promise<AdventureObject[]>} a list of adventures
-   */
-  searchForAdventures({ search }) {
-    if (!search?.length) return []
+      this.adventureCache.put(
+        adventureType,
+        adventures[adventureType],
+        CACHE_TIMEOUT
+      )
 
-    return this.search.handleAdventureSearch({ search })
+      if (adventureType === 'ski') {
+        this.adventureCache.put(
+          'skiApproach',
+          adventures.skiApproach,
+          CACHE_TIMEOUT
+        )
+      }
+
+      return adventures
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**
@@ -193,7 +196,7 @@ class AdventureService extends Water {
    * @param {number} params.count
    * @returns {Promise<Object[]>} a list of adventures ordered from closest to the given coordinates within the count limit provided
    */
-  getClosestAdventures({ adventureType, coordinates, count = 10 }) {
+  getClosestAdventures({ adventureType, coordinates, count = 10, zoneId = 0 }) {
     if (!(adventureType && coordinates.lat && coordinates.lng)) {
       throw 'adventureType and coordinates are required'
     }
@@ -207,17 +210,32 @@ class AdventureService extends Water {
       throw 'adventureType must be a string. Coordinates must be numbers and count must be a number'
     }
 
-    return this.adventureDB.getClosestAdventures({
-      adventureType,
-      coordinates,
-      count
-    })
+    if (
+      !['ski', 'climb', 'hike', 'skiApproach', 'bike'].includes(adventureType)
+    ) {
+      throw `adventureType must be the appropriate type. ['ski', 'climb', 'hike', 'skiApproach', 'bike']`
+    }
+
+    if (zoneId) {
+      return this.adventureDB.getClosestZoneAdventures({
+        adventureType,
+        coordinates,
+        count,
+        zoneId
+      })
+    } else {
+      return this.adventureDB.getClosestAdventuresFromDB({
+        adventureType,
+        coordinates,
+        count
+      })
+    }
   }
 
   /**
    * @param {Object} params
-   * @param {number} params.adventureId | the id of the adventure to search for
-   * @param {string} params.adventureType | the type of the adventure to search for
+   * @param {number} params.adventureId
+   * @param {string} params.adventureType
    * @returns {Promise<AdventureObject>}
    */
   getSpecificAdventure({ adventureId, adventureType }) {
@@ -228,6 +246,8 @@ class AdventureService extends Water {
   }
 
   /**
+   * @description this function checks the current ratings of an adventure to make sure the new
+   * rating you're about to add makes sense in addition to it
    * @param {Object} params
    * @param {number} params.adventureId
    * @param {string} params.difficulty
@@ -259,49 +279,65 @@ class AdventureService extends Water {
       })
   }
 
-  convertMetersToFeet(meters) {
-    return meters * 3.28084
-  }
-
+  /**
+   * @param {Object} params
+   * @param {Object} params.field
+   * @param {number} params.field.adventure_id
+   * @param {string} params.field.adventure_type
+   * @param {string} params.field.path | the first number in each subarray is the lng coordinate, the second is the lat coordinate
+   * @param {string} params.field.elevations | the first number is the elevation, the second number is the distance along the path
+   * @returns {Object} | field object
+   */
   async databaseEditPath({ field }) {
     try {
       const elevations = JSON.parse(field.elevations)
-      const sortedElevations = elevations
-        .map((elev) => elev[0])
-        .sort((a, b) => a - b)
-      const highest =
-        Math.round(
-          this.convertMetersToFeet(sortedElevations.slice(-1)[0]) * 1000
-        ) / 1000
-      const lowest =
-        Math.round(this.convertMetersToFeet(sortedElevations[0]) * 1000) / 1000
 
-      let lastElevation = elevations[0][0]
-      let totals = [0, 0]
-      elevations.forEach((elev) => {
-        if (elev[0] - lastElevation > 0) {
-          totals[0] = elev[0] - lastElevation + totals[0]
-        } else {
-          totals[1] = elev[0] - lastElevation + totals[1]
-        }
+      // calculate the highest and lowest points on the path
+      const highest = Math.round(Math.max(...elevations.map((e) => e[0])))
+      const lowest = Math.round(Math.min(...elevations.map((e) => e[0])))
 
-        lastElevation = elev[0]
-      })
+      const [editPath, editPoints] = splitPath(field.path)
 
-      logger.info(
-        `database path edit: ${totals}, highest: ${highest}, lowest: ${lowest}`
-      )
+      // only bike and hike adventure types have total elevation gain and loss
+      // I'm not really sure why, just that ski is divided into approach and descent
+      // lines which might cover that inherently
+      if (['bike', 'hike'].includes(field.adventure_type)) {
+        let lastElevation = elevations[0][0]
+        let totals = [0, 0]
+        // calculating total elevation gain and loss
+        elevations.forEach((elev) => {
+          if (elev[0] - lastElevation > 0) {
+            totals[0] = elev[0] - lastElevation + totals[0]
+          } else {
+            totals[1] = elev[0] - lastElevation + totals[1]
+          }
 
-      if (field.adventure_type === 'bike') {
+          lastElevation = elev[0]
+        })
+
+        logger.info(
+          `database path edit: ${totals}, highest: ${highest}, lowest: ${lowest}`
+        )
+
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
             ...field,
             summit_elevation: highest,
             base_elevation: lowest,
-            climb: this.convertMetersToFeet(totals[0]),
-            descent: this.convertMetersToFeet(-1 * totals[1])
+            climb: totals[0],
+            descent: totals[1]
           }
         })
+
+        return {
+          field,
+          result_path: editPath,
+          result_points: editPoints,
+          summit_elevation: highest,
+          base_elevation: lowest,
+          climb: totals[0],
+          descent: totals[1]
+        }
       } else {
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
@@ -310,16 +346,17 @@ class AdventureService extends Water {
             base_elevation: lowest
           }
         })
-      }
 
-      logger.info(`database update finished on ${field.adventure_id}`)
+        if (field.adventure_type === 'skiApproach')
+          this.adventureCache.del(field.adventure_type)
 
-      return {
-        field,
-        summit_elevation: highest,
-        base_elevation: lowest,
-        climb: totals[0],
-        descent: totals[1]
+        return {
+          field,
+          result_path: editPath,
+          result_points: editPoints,
+          summit_elevation: highest,
+          base_elevation: lowest
+        }
       }
     } catch (error) {
       logger.error(error)
@@ -351,24 +388,22 @@ class AdventureService extends Water {
 
         return await this.databaseEditPath({ field })
       } else {
-        const adventureKeywords = await this.adventureDB.databaseEditAdventure({
+        await this.adventureDB.databaseEditAdventure({
           field
         })
 
-        if (
-          adventureKeywords !== false &&
-          this.search.adventureKeywordLibrary.includes(field.name)
-        ) {
-          this.adventureCache.del(adventureKeywords.adventure_type)
-          await this.search.saveAdventureKeywords({
-            searchableFields: adventureKeywords,
-            adventureId: field.adventure_id
-          })
-        }
+        this.adventureCache.del(field.adventure_type)
+
+        let allAdventures = await this.getAdventureList({
+          adventureType: field.adventure_type
+        })
 
         logger.info(`database update finished on ${field.adventure_id}`)
 
-        return field
+        return {
+          field,
+          all_adventures: allAdventures
+        }
       }
     } catch (error) {
       logger.error(error)

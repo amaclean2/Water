@@ -79,17 +79,22 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<NewConversationReturnType>} | an object containing the
    * conversationId of the new conversation
    */
-  saveNewConversation({ userIds }) {
-    let scopedId
-    return this.sendQuery(createNewConversationStatement)
-      .then(([{ insertId: conversationId }]) => {
-        scopedId = conversationId
-        return this.sendQuery(createNewInteractionsStatement, [
-          userIds.map((userId) => [userId, conversationId, false])
-        ])
-      })
-      .then(() => ({ conversation_id: scopedId }))
-      .catch(failedInsertion)
+  async saveNewConversation({ userIds }) {
+    try {
+      // create a new conversation with last_message property = ''
+      const [{ insertId: conversationId }] = await this.sendQuery(
+        createNewConversationStatement
+      )
+      // take the conversation id created above and add it to each user to create conversation_interactions
+      // with user_id and conversation_id
+      await this.sendQuery(createNewInteractionsStatement, [
+        userIds.map((userId) => [userId, conversationId, false])
+      ])
+      return { conversation_id: conversationId }
+    } catch (error) {
+      failedInsertion(error)
+      throw error
+    }
   }
 
   /**
@@ -131,43 +136,47 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<ConversationResponseType[]>} | an object with the key being the
    * conversation_id and the value being a conversation object
    */
-  getUserConversations({ userId }) {
-    return this.sendQuery(getUserConversationsStatement, [userId, userId])
-      .then(([results]) => {
-        const conversations = {}
-        results.forEach((result) => {
-          if (conversations[result.conversation_id]) {
-            conversations[result.conversation_id].users = [
-              ...conversations[result.conversation_id].users,
+  async getUserConversations({ userId }) {
+    try {
+      const [results] = await this.sendQuery(getUserConversationsStatement, [
+        userId,
+        userId
+      ])
+      const conversations = {}
+      results.forEach((result) => {
+        if (conversations[result.conversation_id]) {
+          conversations[result.conversation_id].users = [
+            ...conversations[result.conversation_id].users,
+            {
+              display_name: result.user_display_name,
+              user_id: result.user_id,
+              profile_picture_url: result.profile_picture_url
+            }
+          ]
+
+          if (result.user_id === userId) {
+            conversations[result.conversation_id].unread = !!result.unread
+          }
+        } else {
+          conversations[result.conversation_id] = {
+            users: [
               {
                 display_name: result.user_display_name,
                 user_id: result.user_id,
                 profile_picture_url: result.profile_picture_url
               }
-            ]
-
-            if (result.user_id === userId) {
-              conversations[result.conversation_id].unread = !!result.unread
-            }
-          } else {
-            conversations[result.conversation_id] = {
-              users: [
-                {
-                  display_name: result.user_display_name,
-                  user_id: result.user_id,
-                  profile_picture_url: result.profile_picture_url
-                }
-              ],
-              conversation_id: result.conversation_id,
-              last_message: result.last_message,
-              ...(result.user_id === userId && { unread: !!result.unread })
-            }
+            ],
+            conversation_id: result.conversation_id,
+            last_message: result.last_message,
+            ...(result.user_id === userId && { unread: !!result.unread })
           }
-        })
-
-        return conversations
+        }
       })
-      .catch(failedQuery)
+
+      return conversations
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**

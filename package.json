@@ -1,10 +1,10 @@
 {
   "name": "@amaclean2/sundaypeak-water",
-  "version": "1.7.31",
+  "version": "1.9.78",
   "description": "Backend services for SundayPeak",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage"
+    "test": "NODE_ENV=test jest --coverage"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -17,8 +17,10 @@
     "nodemon": "^2.0.20"
   },
   "dependencies": {
+    "apn": "^2.2.0",
     "csvtojson": "^2.0.10",
     "dotenv": "^16.0.3",
+    "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.0",
     "memory-cache": "^0.2.0",
     "multer": "^1.4.5-lts.1",

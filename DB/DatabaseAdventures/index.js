@@ -3,12 +3,9 @@ const { AdventureObject } = require('../../TypeDefs/adventures')
 const {
   selectAdventuresStatement,
   updateAdventureStatements,
-  searchAdventureStatement,
-  addKeywordStatement,
   deleteSkiStatement,
   deleteClimbStatement,
   deleteHikeStatement,
-  getKeywordsStatement,
   selectAdventureByIdGroup,
   createNewClimbStatement,
   createNewHikeStatement,
@@ -19,23 +16,33 @@ const {
   getAdventurePicturesStatement,
   createAdventurePictureStatement,
   deleteBikeStatement,
-  getCloseAdventures
+  getCloseAdventures,
+  createNewBikeStatement,
+  createNewBikeAdventureStatement,
+  createNewApproachStatement,
+  createNewSkiApproachStatement,
+  selectSkiApproachStatement,
+  buildBreadcrumbStatement,
+  updateAdventureGeneralStatement,
+  updateSpecificStatements,
+  getCloseAdventuresGivenZone
 } = require('../Statements')
 const {
   formatAdventureForGeoJSON,
-  getGeneralFields,
-  adventureTemplates,
-  getStatementKey,
+  adventureTemplate,
   getPropsToImport,
   parseAdventures,
-  createSpecificProperties
+  createSpecificProperties,
+  getGeneralFields,
+  pathAdventures,
+  removeUnusedVariables,
+  splitPath
 } = require('./utils')
 const {
   failedInsertion,
   failedQuery,
   failedUpdate,
-  failedDeletion,
-  calculateCameraBounds
+  failedDeletion
 } = require('../utils')
 const { removeImage } = require('../../Services/utils/sharp')
 const logger = require('../../Config/logger')
@@ -49,76 +56,125 @@ class AdventureDataLayer extends DataLayer {
    * @param {Object} adventure | the adventure object to be added
    * @returns {Promise} the new adventure id
    */
-  addAdventure(adventure) {
-    const adventureProperties = getPropsToImport(adventure)
+  async addAdventure(adventure) {
+    try {
+      const adventureProperties = getPropsToImport(adventure)
 
-    // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike, bike)
-    // and the general adventures table. This statement updates the specific one and gets the specific id
-    return this.sendQuery(adventureProperties.createNewSpecificStatement, [
-      [adventureProperties.specificFields]
-    ])
-      .then(([{ insertId: specificId }]) =>
-        getGeneralFields({
-          ...adventure,
-          [adventureProperties.specificIdType]: specificId
-        })
+      logger.info(`adventure properties built for new adventure`)
+
+      // there are two tables that need to get updated, the specific adventure values, (ski, climb, hike, bike)
+      // and the general adventures table. This statement updates the specific one and gets the specific id
+      const [{ insertId: specificId }] = await this.sendQuery(
+        adventureProperties.createNewSpecificStatement,
+        [[adventureProperties.specificFields]]
       )
-      .then((fields) => {
-        // this is the last query to update the general adventures table and it returns the id of the adventure
-        return this.sendQuery(adventureProperties.createNewGeneralStatement, [
-          [fields]
-        ])
+
+      logger.info(`specific information saved for new adventure`)
+
+      const fields = getGeneralFields({
+        ...adventure,
+        [adventureProperties.specificIdType]: specificId
       })
-      .then(([{ insertId }]) => insertId)
-      .catch(failedInsertion)
+
+      logger.info(`fields obtained for general information`)
+
+      const [{ insertId }] = await this.sendQuery(
+        adventureProperties.createNewGeneralStatement,
+        [[fields]]
+      )
+
+      logger.info(`general information saved for adventure ${insertId}`)
+
+      return insertId
+    } catch (error) {
+      logger.error(error)
+      throw failedInsertion(error)
+    }
   }
 
   async bulkAddAdventures({ adventures }) {
-    const parsedAdventures = parseAdventures(adventures)
-    const specificProperties = createSpecificProperties(parsedAdventures)
-    const ids = {}
-    const generalProperties = {}
+    try {
+      const parsedAdventures = parseAdventures(adventures)
+      const specificProperties = createSpecificProperties(parsedAdventures)
+      const ids = {}
+      const generalProperties = {}
 
-    const createNewSpecificStatements = {
-      ski: createNewSkiStatement,
-      climb: createNewClimbStatement,
-      hike: createNewHikeStatement
-    }
+      const createNewSpecificStatements = {
+        ski: createNewSkiStatement,
+        climb: createNewClimbStatement,
+        hike: createNewHikeStatement,
+        bike: createNewBikeStatement,
+        skiApproach: createNewApproachStatement
+      }
 
-    const createNewGeneralStatements = {
-      ski: createNewSkiAdventureStatement,
-      climb: createNewClimbAdventureStatement,
-      hike: createNewHikeAdventureStatement
-    }
+      const createNewGeneralStatements = {
+        ski: createNewSkiAdventureStatement,
+        climb: createNewClimbAdventureStatement,
+        hike: createNewHikeAdventureStatement,
+        bike: createNewBikeAdventureStatement,
+        skiApproach: createNewSkiApproachStatement
+      }
 
-    return Promise.all(
-      ['ski', 'climb', 'hike', 'bike'].map((type) => {
-        if (!parsedAdventures[type].length) {
-          return []
-        }
+      const responses = await Promise.all(
+        ['ski', 'climb', 'hike', 'bike', 'skiApproach'].map(async (type) => {
+          logger.info(`inserting adventures for ${type}`)
 
-        return this.sendQuery(createNewSpecificStatements[type], [
-          specificProperties[type]
-        ]).then(([{ insertId }]) => {
-          ids[type] = parsedAdventures[type].map((_, idx) => insertId + idx)
-          generalProperties[type] = parsedAdventures[type].map(
-            (adventure, idx) =>
-              getGeneralFields({
-                ...adventure,
-                [`adventure_${type}_id`]: ids[type][idx]
-              })
+          // return an empty array if there's not adventures for that type
+          if (!parsedAdventures[type].length) {
+            return []
+          }
+
+          // first insert the properties for fields specific to that adventure
+          // then with the specific id, you can insert that into the general adventures
+
+          // this statement potentially inserts multiple entries at once
+          const [{ insertId }] = await this.sendQuery(
+            createNewSpecificStatements[type],
+            [specificProperties[type]]
           )
-          return this.sendQuery(createNewGeneralStatements[type], [
-            generalProperties[type]
-          ]).then(([{ insertId: adventureId }]) => {
-            return parsedAdventures[type].map((adventure, idx) => ({
-              ...adventure,
-              id: adventureId + idx
-            }))
-          })
+
+          // the database only returns the id of the first element inserted
+          // so to get all the ids, you have to add the insertId to each element
+          ids[type] = parsedAdventures[type].map((_, idx) => insertId + idx)
+
+          generalProperties[type] = parsedAdventures[type].map(
+            (adventure, idx) => {
+              switch (adventure.adventure_type) {
+                case 'ski':
+                  adventure.adventure_ski_id = ids[type][idx]
+                  break
+                case 'climb':
+                  adventure.adventure_climb_id = ids[type][idx]
+                  break
+                case 'hike':
+                  adventure.adventure_hike_id = ids[type][idx]
+                  break
+                case 'skiApproach':
+                  adventure.ski_approach_id = ids[type][idx]
+                  break
+              }
+
+              return getGeneralFields(adventure)
+            }
+          )
+
+          const [{ insertId: adventureId }] = await this.sendQuery(
+            createNewGeneralStatements[type],
+            [generalProperties[type]]
+          )
+
+          return parsedAdventures[type].map((adventure, idx) => ({
+            ...adventure,
+            id: adventureId + idx
+          }))
         })
-      })
-    )
+      )
+
+      return responses
+    } catch (error) {
+      logger.error(error)
+      throw error
+    }
   }
 
   /**
@@ -127,62 +183,106 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject>}
    */
-  getAdventure({ adventureId, adventureType }) {
-    return this.sendQuery(selectAdventureByIdGroup[adventureType], [
-      adventureId
-    ])
-      .then(([[selectedAdventure]]) => {
-        if (!selectedAdventure) {
-          return null
-        }
+  async getAdventure({ adventureId, adventureType }) {
+    try {
+      const [[selectedAdventure]] = await this.sendQuery(
+        selectAdventureByIdGroup[adventureType],
+        [adventureId]
+      )
 
-        // convert the stringified path back to an object
-        if (['ski', 'hike', 'bike'].includes(adventureType)) {
-          if (selectedAdventure?.path?.length !== 0) {
-            selectedAdventure.path = JSON.parse(selectedAdventure.path)
-            selectedAdventure.elevations = JSON.parse(
-              selectedAdventure.elevations
-            )
-            selectedAdventure.cameraBounds = calculateCameraBounds(
-              selectedAdventure.path
-            )
-          } else if (!selectedAdventure?.path) {
-            selectedAdventure.path = []
-          }
+      if (!selectedAdventure) {
+        return null
+      }
 
-          if (selectedAdventure.approach_distance !== undefined) {
-            selectedAdventure.distance = selectedAdventure.approach_distance
-            delete selectedAdventure.approach_distance
-          }
-        }
+      selectedAdventure.public = Boolean(selectedAdventure.public)
 
-        selectedAdventure.rating = `${Math.round(
-          selectedAdventure.rating.split(':')[0]
-        )}:${selectedAdventure.rating.split(':')[1]}`
+      // convert the stringified path back to an object
+      // pathAdventures are any adventures that would have a path/elevations property
+      if (
+        pathAdventures.includes(adventureType) &&
+        selectedAdventure.path &&
+        selectedAdventure?.path?.length !== 0
+      ) {
+        // splitting the array around a point that's [0]. This point is there to split the
+        // path shown on the map with the points used to edit the path
 
-        return selectedAdventure
-      })
-      .catch(failedQuery)
+        const [path, points] = splitPath(selectedAdventure.path ?? '[]')
+        selectedAdventure.path = path
+        selectedAdventure.points = points
+
+        selectedAdventure.elevations = JSON.parse(
+          selectedAdventure.elevations ?? '[]'
+        )
+      } else if (!selectedAdventure.path) {
+        selectedAdventure.path = []
+      }
+
+      selectedAdventure.rating = `${Math.round(
+        selectedAdventure.rating.split(':')[0]
+      )}:${selectedAdventure.rating.split(':')[1]}`
+
+      return selectedAdventure
+    } catch (error) {
+      return failedQuery(error)
+    }
   }
 
   /**
    * @param {Object} params
-   * @param {string} params.adventureType | 'ski' | 'hike' | 'climb' | 'bike'
+   * @param {string} params.adventureType | 'ski' | 'hike' | 'climb' | 'bike' | 'skiApproach'
    * @param {Object} params.coordinates
    * @param {number} params.coordinates.lat
-   * @param {number} params.coordiantes.lng
+   * @param {number} params.coordinates.lng
    * @param {number} params.count
    * @returns {Promise<Object[]>} | returns a promise containing an array of adventure objects that are closest to the given coordinates
    */
-  getClosestAdventures({ adventureType, coordinates, count }) {
-    logger.info({ centerCoordinatesOfAdventures: coordinates })
-    return this.sendQuery(getCloseAdventures[adventureType], [
-      coordinates.lat,
-      coordinates.lng,
-      count
-    ])
-      .then(([results]) => results)
-      .catch(failedQuery)
+  async getClosestAdventuresFromDB({ adventureType, coordinates, count }) {
+    try {
+      logger.info(
+        JSON.stringify({
+          centerCoordinatesOfAdventures: coordinates,
+          adventureType
+        })
+      )
+      const [results] = await this.sendQuery(getCloseAdventures, [
+        adventureType,
+        coordinates.lat,
+        coordinates.lng,
+        count
+      ])
+      return results
+    } catch (error) {
+      return failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.adventureType
+   * @param {number} params.zoneId
+   * @param {Object} params.coordinates
+   * @param {number} params.coordiantes.lat
+   * @param {number} params.coordiantes.lng
+   * @returns {Promise<Object>} an array of adventures that match up to the given parameters
+   */
+  async getClosestZoneAdventures({
+    adventureType,
+    zoneId,
+    coordinates,
+    count
+  }) {
+    try {
+      const [results] = await this.sendQuery(getCloseAdventuresGivenZone, [
+        adventureType,
+        zoneId,
+        coordinates.lat,
+        coordinates.lng,
+        count
+      ])
+      return results
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -190,20 +290,46 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject[]>}
    */
-  databaseGetTypedAdventures({ adventureType }) {
-    // fetch all the adventures that pertain to that type from the database
-    return this.sendQuery(selectAdventuresStatement, [adventureType])
-      .then(([results]) => {
-        return results.map((result) => formatAdventureForGeoJSON(result))
-      })
-      .then((formattedResults) => {
-        // this is formatted as geoJSON because the mapbox api needs to read it
+  async databaseGetTypedAdventures({ adventureType }) {
+    try {
+      if (!adventureType) {
+        throw 'adventureType parameter required'
+      }
+
+      // fetch all the adventures that pertain to that type from the database
+      const [results] = await this.sendQuery(selectAdventuresStatement, [
+        adventureType
+      ])
+
+      logger.info(`selecting all results for adventure type: ${adventureType}`)
+
+      const formattedResults = formatAdventureForGeoJSON(
+        results.map((rs) => removeUnusedVariables(rs))
+      )
+
+      if (adventureType === 'ski') {
+        const [skiApproachResults] = await this.sendQuery(
+          selectSkiApproachStatement
+        )
+
+        logger.info('ski results fetched')
+
         return {
-          type: 'FeatureCollection',
-          features: formattedResults
+          ski: formattedResults,
+          skiApproach: formatAdventureForGeoJSON(
+            skiApproachResults.map((sa) => removeUnusedVariables(sa))
+          )
         }
-      })
-      .catch(failedQuery)
+      } else {
+        logger.info('non-ski results fetched')
+        return {
+          [adventureType]: formattedResults
+        }
+      }
+    } catch (error) {
+      logger.error(error)
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -229,7 +355,10 @@ class AdventureDataLayer extends DataLayer {
             ? 'remove_ski_trail_path'
             : field.adventure_type === 'hike'
             ? 'remove_hike_trail_path'
-            : 'remove_bike_trail_path'
+            : field.adventure_type === 'bike'
+            ? 'remove_bike_trail_path'
+            : 'remove_ski_approach_trail_path'
+
         await this.sendQuery(updateAdventureStatements[type], [
           field.adventure_id
         ])
@@ -245,6 +374,7 @@ class AdventureDataLayer extends DataLayer {
           field.descent,
           field.adventure_id
         ])
+        return splitPath(field.path)
       } else if (field.adventure_type === 'ski') {
         await this.sendQuery(updateAdventureStatements['ski_trail_path'], [
           field.path,
@@ -259,8 +389,21 @@ class AdventureDataLayer extends DataLayer {
           field.elevations,
           field.summit_elevation,
           field.base_elevation,
+          field.climb,
+          field.descent,
           field.adventure_id
         ])
+      } else if (field.adventure_type === 'skiApproach') {
+        await this.sendQuery(
+          updateAdventureStatements['ski_approach_trail_path'],
+          [
+            field.path,
+            field.elevations,
+            field.summit_elevation,
+            field.base_elevation,
+            field.adventure_id
+          ]
+        )
       }
       logger.info(`finished editing trail_paths for ${field.adventure_id}`)
 
@@ -278,45 +421,42 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.field.value
    * @param {number} params.field.adventure_id
    * @param {string} params.field.adventure_type
-   * @returns {Promise<AdventureObject>} the updated adventure
+   * @returns {Promise<void>} nothing
    */
   async databaseEditAdventure({ field }) {
     // some of the adventure fields are in the adventures table, some are in the specific-type table
     // if this field is in the general table then we just need to update that one.
-    // Editing requires another read because we need to update the searchable statement table as well
     try {
       if (field.name === 'paths') {
         throw 'paths have their own edit statement'
       }
 
-      if (adventureTemplates.general.includes(field.name)) {
+      if (adventureTemplate.includes(field.name)) {
+        // general adventure property
         logger.info(
           `edit new general query on ${field.adventure_id}, ${field.name}`
         )
-        await this.sendQuery(updateAdventureStatements[field.name], [
-          field.value,
-          field.adventure_id
-        ])
-        const [[statements]] = await this.sendQuery(getKeywordsStatement, [
+
+        await this.sendQuery(updateAdventureGeneralStatement, [
+          field.name,
+          field.name === 'public' ? +field.value : field.value,
           field.adventure_id
         ])
 
         logger.info(
           `finished editing query on ${field.adventure_id}, ${field.name}`
         )
-
-        return statements
       } else {
+        // specific adventure property
         logger.info(
           `edit new specific query on ${field.adventure_id}, ${field.name}`
         )
         // if we are updating one of the specific adventure fields then we just do that
-        await this.sendQuery(
-          updateAdventureStatements[
-            getStatementKey(field.name, field.adventure_type)
-          ],
-          [field.value, field.adventure_id]
-        )
+        await this.sendQuery(updateSpecificStatements[field.adventure_type], [
+          field.name,
+          field.value,
+          field.adventure_id
+        ])
         logger.info(
           `finished editing query on ${field.adventure_id}, ${field.name}`
         )
@@ -325,29 +465,6 @@ class AdventureDataLayer extends DataLayer {
     } catch (error) {
       throw failedUpdate(error)
     }
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.keyword
-   * @param {number} params.adventureId
-   * @returns {Promise<void>}
-   */
-  updateSearchAdventureKeywords({ keyword, adventureId }) {
-    return this.sendQuery(addKeywordStatement, [keyword, adventureId]).catch(
-      failedUpdate
-    )
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.search
-   * @returns {Promise<AdventureObject[]>} a list of adventures matching the given string
-   */
-  searchDatabaseForAdventureString({ search }) {
-    return this.sendQuery(searchAdventureStatement, [`%${search}%`])
-      .then(([allResults]) => allResults)
-      .catch(failedQuery)
   }
 
   /**
@@ -385,12 +502,15 @@ class AdventureDataLayer extends DataLayer {
    * @param {number} params.adventureId
    * @returns {Promise<string[]>} | a list of urls attributed to that adventure
    */
-  getAdventureImages({ adventureId }) {
-    return this.sendQuery(getAdventurePicturesStatement, [adventureId])
-      .then(([results]) =>
-        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
-      )
-      .catch(failedQuery)
+  async getAdventureImages({ adventureId }) {
+    try {
+      const [results] = await this.sendQuery(getAdventurePicturesStatement, [
+        adventureId
+      ])
+      return results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -400,20 +520,40 @@ class AdventureDataLayer extends DataLayer {
    * @param {number} params.adventureId
    * @returns {Promise<string>}
    */
-  saveImageToAdventure({ url, userId, adventureId }) {
-    return this.sendQuery(createAdventurePictureStatement, [
-      url,
-      userId,
-      adventureId
-    ])
-      .then(([results]) => {
-        if (Object.keys(results).length) {
-          return 'adventure image saved'
-        } else {
-          throw 'saving adventure image failed'
-        }
-      })
-      .catch(failedInsertion)
+  async saveImageToAdventure({ url, userId, adventureId }) {
+    try {
+      const [results] = await this.sendQuery(createAdventurePictureStatement, [
+        url,
+        userId,
+        adventureId
+      ])
+      if (Object.keys(results)?.length) {
+        return 'adventure image saved'
+      } else {
+        throw 'saving adventure image failed'
+      }
+    } catch (error) {
+      throw failedInsertion(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.adventureId
+   * @returns {Promise<Object[]>} a list of objects containing the
+   */
+  async buldBreadcrumb({ adventureId }) {
+    try {
+      const [results] = await this.sendQuery(buildBreadcrumbStatement, [
+        adventureId
+      ])
+      return results.map((result, idx) => ({
+        ...result,
+        category_type: idx === 0 ? 'adventure' : 'zone'
+      }))
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 }
 
