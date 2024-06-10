@@ -65,13 +65,20 @@ const formatAdventureForGeoJSON = (adventures) => {
 
 /**
  * @param {string} pathStr
- * @returns {Array.<Array} | an array, the first element is the path, the second element is the edit points
+ * @returns {Array.<Array>} | an array, the first element is the path, the second element is the edit points
  */
 const splitPath = (pathStr = '[]') => {
   // splitting the array around a point that's [0]. This point is there to split the
   // path shown on the map with the points used to edit the path
   let newPath, newPoints
-  const pathArr = JSON.parse(pathStr)
+
+  let pathArr = null
+  if (typeof pathStr === 'string') {
+    pathArr = JSON.parse(pathStr)
+  } else {
+    logger.info(`unexpected pathStr: ${pathStr}`)
+    pathArr = pathStr
+  }
 
   if (!pathArr) return []
 
