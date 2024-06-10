@@ -2,6 +2,7 @@ const Water = require('.')
 const { Cache } = require('memory-cache')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
+const { splitPath } = require('../DB/DatabaseAdventures/utils')
 
 const CACHE_TIMEOUT = 1000 * 360
 
@@ -291,9 +292,15 @@ class AdventureService extends Water {
     try {
       const elevations = JSON.parse(field.elevations)
 
+      // calculate the highest and lowest points on the path
       const highest = Math.round(Math.max(...elevations.map((e) => e[0])))
       const lowest = Math.round(Math.min(...elevations.map((e) => e[0])))
 
+      const [editPath, editPoints] = splitPath(field.path)
+
+      // only bike and hike adventure types have total elevation gain and loss
+      // I'm not really sure why, just that ski is divided into approach and descent
+      // lines which might cover that inherently
       if (['bike', 'hike'].includes(field.adventure_type)) {
         let lastElevation = elevations[0][0]
         let totals = [0, 0]
@@ -324,6 +331,8 @@ class AdventureService extends Water {
 
         return {
           field,
+          result_path: editPath,
+          result_points: editPoints,
           summit_elevation: highest,
           base_elevation: lowest,
           climb: totals[0],
@@ -343,6 +352,8 @@ class AdventureService extends Water {
 
         return {
           field,
+          result_path: editPath,
+          result_points: editPoints,
           summit_elevation: highest,
           base_elevation: lowest
         }

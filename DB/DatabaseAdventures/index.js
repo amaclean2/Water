@@ -374,6 +374,7 @@ class AdventureDataLayer extends DataLayer {
           field.descent,
           field.adventure_id
         ])
+        return splitPath(field.path)
       } else if (field.adventure_type === 'ski') {
         await this.sendQuery(updateAdventureStatements['ski_trail_path'], [
           field.path,

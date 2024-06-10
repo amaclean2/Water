@@ -35,7 +35,8 @@ const formatAdventureForGeoJSON = (adventures) => {
         id: point.adventure_id,
         properties: {
           adventureType: point.adventure_type,
-          adventureName: point.adventure_name
+          adventureName: point.adventure_name,
+          color: adventurePathColor(point.adventure_type)
         },
         geometry: {
           type: 'Point',
@@ -50,7 +51,8 @@ const formatAdventureForGeoJSON = (adventures) => {
         id: line.adventure_id,
         properties: {
           adventureType: line.adventure_type,
-          adventureName: line.adventure_name
+          adventureName: line.adventure_name,
+          color: adventurePathColor(line.adventure_type)
         },
         geometry: {
           type: 'LineString',
@@ -61,6 +63,10 @@ const formatAdventureForGeoJSON = (adventures) => {
   }
 }
 
+/**
+ * @param {string} pathStr
+ * @returns {Array.<Array} | an array, the first element is the path, the second element is the edit points
+ */
 const splitPath = (pathStr = '[]') => {
   // splitting the array around a point that's [0]. This point is there to split the
   // path shown on the map with the points used to edit the path
@@ -191,6 +197,18 @@ const adventureTemplate = [
   'difficulty'
 ]
 
+const adventurePathColor = (adventureType = 'ski') => {
+  const colors = {
+    ski: '#38e',
+    hike: '#e53',
+    climb: '#ccc',
+    bike: '#3a3',
+    skiApproach: '#d70'
+  }
+
+  return colors[adventureType]
+}
+
 const getPropsToImport = (adventure) => {
   const { adventure_type } = adventure
   const adventureProperties = {}
@@ -286,6 +304,7 @@ module.exports = {
   createSpecificProperties,
   removeUnusedVariables,
   splitPath,
+  adventurePathColor,
   adventureTemplate,
   pathAdventures
 }
