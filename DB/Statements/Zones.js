@@ -12,7 +12,7 @@ z.date_created AS date_created,
 u.id AS creator_id,
 CONCAT(u.first_name, ' ', u.last_name) AS creator_name,
 u.email AS creator_email,
-u.profile_picture_url AS profile_picture_url
+u.profile_picture_url AS creator_picture_url
 FROM zones AS z
 INNER JOIN users AS u ON z.creator_id = u.id
 WHERE z.id = ?`
@@ -58,7 +58,6 @@ SELECT
 z2.id AS zone_id,
 z2.adventure_type,
 z2.zone_name,
-z2.id AS zone_child_id,
 z2.coordinates_lat,
 z2.coordinates_lng,
 z2.public

@@ -1,10 +1,10 @@
 const Water = require('.')
-const { Cache } = require('memory-cache')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
-const { splitPath } = require('../DB/DatabaseAdventures/utils')
-
-const CACHE_TIMEOUT = 1000 * 360
+const {
+  splitPath,
+  formatCoordsObject
+} = require('../DB/DatabaseAdventures/utils')
 
 /**
  * @class
@@ -14,7 +14,6 @@ const CACHE_TIMEOUT = 1000 * 360
 class AdventureService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.adventureCache = new Cache()
   }
   /**
    * @private
@@ -27,19 +26,16 @@ class AdventureService extends Water {
    */
   async #buildAdventureObject({ id, type, providedObject }) {
     if (providedObject) {
-      const basicAdventure = {
-        ...providedObject,
+      const { coordinates_lat, coordinates_lng, ...newObj } = providedObject
+
+      return {
+        ...newObj,
+        coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
         id,
         todo_users: [],
         completed_users: [],
-        images: [],
-        coordinates: {
-          lat: providedObject.coordinates_lat,
-          lng: providedObject.coordinates_lng
-        }
+        images: []
       }
-
-      return basicAdventure
     }
 
     const adventure = await this.adventureDB.getAdventure({
@@ -64,23 +60,18 @@ class AdventureService extends Water {
       adventureId: id
     })
 
-    const formattedAdventure = {
-      ...adventure,
+    const { coordinates_lat, coordinates_lng, public, ...newAdventure } =
+      adventure
+
+    return {
+      ...newAdventure,
+      coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
       images,
       breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
-      public: Boolean(adventure.public),
-      coordinates: {
-        lat: adventure.coordinates_lat,
-        lng: adventure.coordinates_lng
-      }
+      public: Boolean(public)
     }
-
-    delete formattedAdventure.coordinates_lat
-    delete formattedAdventure.coordinates_lng
-
-    return formattedAdventure
   }
 
   /**
@@ -106,7 +97,7 @@ class AdventureService extends Water {
     logger.info('adventure object built successfully')
 
     // we need to clear the cache since it's now obsolete
-    this.adventureCache.del(adventureObject.adventure_type)
+    this.cache.removeFromAdventureCache(adventureObject.adventure_type)
 
     return {
       adventure,
@@ -133,7 +124,7 @@ class AdventureService extends Water {
           []
         )
 
-        this.adventureCache.clear()
+        this.cache.clearAdventureCache()
         return allAdventures
       })
   }
@@ -146,10 +137,10 @@ class AdventureService extends Water {
   async getAdventureList({ adventureType }) {
     try {
       // if there is already a cached adventure list, just return that
-      const cachedResults = this.adventureCache.get(adventureType)
+      const cachedResults = this.cache.getAdventures(adventureType)
       let approachResults = null
       if (adventureType === 'ski')
-        approachResults = this.adventureCache.get('skiApproach')
+        approachResults = this.cache.getAdventures('skiApproach')
 
       if (adventureType !== 'ski' && cachedResults) {
         return {
@@ -166,18 +157,10 @@ class AdventureService extends Water {
         adventureType
       })
 
-      this.adventureCache.put(
-        adventureType,
-        adventures[adventureType],
-        CACHE_TIMEOUT
-      )
+      this.cache.addToAdventureCache(adventures[adventureType], adventureType)
 
       if (adventureType === 'ski') {
-        this.adventureCache.put(
-          'skiApproach',
-          adventures.skiApproach,
-          CACHE_TIMEOUT
-        )
+        this.cache.addToAdventureCache(adventures.skiApproach, 'skiApproach')
       }
 
       return adventures
@@ -348,7 +331,7 @@ class AdventureService extends Water {
         })
 
         if (field.adventure_type === 'skiApproach')
-          this.adventureCache.del(field.adventure_type)
+          this.cache.removeFromAdventureCache(field.adventure_type)
 
         return {
           field,
@@ -392,7 +375,7 @@ class AdventureService extends Water {
           field
         })
 
-        this.adventureCache.del(field.adventure_type)
+        this.cache.removeFromAdventureCache(field.adventure_type)
 
         let allAdventures = await this.getAdventureList({
           adventureType: field.adventure_type
@@ -424,7 +407,7 @@ class AdventureService extends Water {
         adventureType
       })
       .then((resp) => {
-        this.adventureCache.del(adventureType)
+        this.cache.removeFromAdventureCache(adventureType)
         return resp
       })
   }

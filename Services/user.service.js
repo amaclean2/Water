@@ -80,12 +80,10 @@ class UserService extends Water {
       images,
       email_opt_out: !!userObject.email_opt_out,
       completed_adventures: completedAdventures.map((activity) => ({
-        ...activity,
-        user_id: activity.creator_id
+        ...activity
       })),
       todo_adventures: todoAdventures.map((adventure) => ({
-        ...adventure,
-        user_id: adventure.creator_id
+        ...adventure
       }))
     }
 

@@ -6,6 +6,7 @@ const UserDataLayer = require('../DB/DatabaseUsers')
 const MessageDataLayer = require('../DB/DatabaseUsers/messages')
 const SearchDataLayer = require('../DB/Search')
 const AuthService = require('./auth.service')
+const CacheService = require('./cache.service')
 
 class Water {
   constructor(sqlDependencies, jwtSecret) {
@@ -17,6 +18,7 @@ class Water {
     this.todoDB = new TodoAdventureDataLayer(sqlDependencies)
     this.searchDB = new SearchDataLayer(sqlDependencies)
     this.auth = new AuthService(jwtSecret)
+    this.cache = new CacheService()
   }
 
   /**

@@ -1,14 +1,10 @@
-const { Cache } = require('memory-cache')
-
 const Water = require('.')
 const logger = require('../Config/logger')
-
-const CACHE_TIMEOUT = 1000 * 360
+const { formatCoordsGeo } = require('../DB/DatabaseAdventures/utils')
 
 class ZoneService extends Water {
   constructor(sendQuery, jwtSecret) {
     super(sendQuery, jwtSecret)
-    this.zoneCache = new Cache()
   }
 
   /**
@@ -29,7 +25,7 @@ class ZoneService extends Water {
    */
   async getAllZonesPerType({ adventureType }) {
     try {
-      const cachedZones = this.zoneCache.get(adventureType)
+      const cachedZones = this.cache.getZones(adventureType)
 
       if (cachedZones)
         return {
@@ -46,7 +42,7 @@ class ZoneService extends Water {
             type: 'Feature',
             geometry: {
               type: 'Point',
-              coordinates: [coordinates_lng, coordinates_lat]
+              coordinates: formatCoordsGeo(coordinates_lat, coordinates_lng)
             },
             properties: propertiesObject,
             id: propertiesObject.id
@@ -54,7 +50,7 @@ class ZoneService extends Water {
         })
       }
 
-      this.zoneCache.put(adventureType, geoJsonFormattedZones, CACHE_TIMEOUT)
+      this.cache.addToZoneCache(geoJsonFormattedZones, adventureType)
 
       return { [adventureType]: geoJsonFormattedZones }
     } catch (error) {
@@ -163,7 +159,7 @@ class ZoneService extends Water {
         images: []
       }
 
-      this.zoneCache.clear()
+      this.cache.clearZoneCache()
 
       return newZone
     } catch (error) {
@@ -184,6 +180,9 @@ class ZoneService extends Water {
         adventureIds: [adventureId],
         zoneId
       })
+
+      this.cache.clearAdventureCache()
+
       return await this.getZoneData({ zoneId })
     } catch (error) {
       logger.info(error)
@@ -200,6 +199,9 @@ class ZoneService extends Water {
   async removeAdventure({ adventureId, zoneId }) {
     try {
       await this.zoneDB.removeAdventureFromZone({ adventureIds: [adventureId] })
+
+      this.cache.clearAdventureCache()
+
       return await this.getZoneData({ zoneId })
     } catch (error) {
       logger.info(error)
@@ -299,7 +301,7 @@ class ZoneService extends Water {
       })
 
       if (editField.includes('coordinates')) {
-        this.zoneCache.clear()
+        this.cache.clearZoneCache()
       }
     } catch (error) {
       logger.info(error)
@@ -346,7 +348,7 @@ class ZoneService extends Water {
     }
 
     await this.zoneDB.deleteZone({ zoneId })
-    this.zoneCache.clear()
+    this.cache.clearZoneCache()
 
     return {
       child_adventures: childAdventures,

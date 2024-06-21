@@ -10,7 +10,6 @@ const {
   removeAdventureFromZoneQuery,
   addZoneToZoneQuery,
   removeZoneFromZoneQuery,
-  editZoneFieldQueries,
   intersectingAdventureQuery,
   intersectingZoneQuery,
   deleteZoneQuery,
@@ -27,7 +26,7 @@ const {
   failedUpdate,
   failedDeletion
 } = require('../utils')
-const { removeUnusedVariables } = require('./utils')
+const { removeUnusedVariables, formatCoordsObject } = require('./utils')
 
 class ZoneDataLayer extends DataLayer {
   /**
@@ -43,16 +42,14 @@ class ZoneDataLayer extends DataLayer {
 
       if (!zoneData) return {}
 
-      zoneData.coordinates = {
-        lat: zoneData.coordinates_lat,
-        lng: zoneData.coordinates_lng
+      const { coordinates_lat, coordinates_lng, public, ...newZoneData } =
+        zoneData
+
+      return {
+        ...newZoneData,
+        coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
+        public: Boolean(public)
       }
-      delete zoneData.coordinates_lat
-      delete zoneData.coordinates_lng
-
-      zoneData.public = Boolean(zoneData.public)
-
-      return zoneData
     } catch (error) {
       throw failedQuery(error)
     }
@@ -70,17 +67,14 @@ class ZoneDataLayer extends DataLayer {
       ])
 
       return zoneAdventures.map((adventure) => {
-        removeUnusedVariables(adventure)
+        const { coordinates_lat, coordinates_lng, public, ...newAdventure } =
+          removeUnusedVariables(adventure)
 
-        adventure.coordinates = {
-          lat: adventure.coordinates_lat,
-          lng: adventure.coordinates_lng
+        return {
+          ...newAdventure,
+          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
+          public: Boolean(public)
         }
-
-        delete adventure.coordinates_lat
-        delete adventure.coordinates_lng
-
-        return adventure
       })
     } catch (error) {
       throw failedQuery(error)
@@ -96,18 +90,13 @@ class ZoneDataLayer extends DataLayer {
     try {
       const [zoneSubzones] = await this.sendQuery(getZoneSubzoneQuery, [zoneId])
       return zoneSubzones.map((subZone) => {
-        const modifiedZone = {
-          ...subZone,
-          coordinates: {
-            lat: subZone.coordinates_lat,
-            lng: subZone.coordinates_lng
-          }
+        const { coordinates_lat, coordinates_lng, public, ...newZone } = subZone
+
+        return {
+          ...newZone,
+          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
+          public: Boolean(public)
         }
-
-        delete modifiedZone.coordinates_lat
-        delete modifiedZone.coordinates_lng
-
-        return modifiedZone
       })
     } catch (error) {
       throw failedQuery(error)
@@ -204,10 +193,7 @@ class ZoneDataLayer extends DataLayer {
         const { coordinates_lat, coordinates_lng, ...newResult } = result
         return {
           ...newResult,
-          coordinates: {
-            lat: coordinates_lat,
-            lng: coordinates_lng
-          }
+          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng)
         }
       })
     } catch (error) {
@@ -249,10 +235,7 @@ class ZoneDataLayer extends DataLayer {
         const { coordinates_lat, coordinates_lng, ...newResult } = result
         return {
           ...newResult,
-          coordinates: {
-            lat: coordinates_lat,
-            lng: coordinates_lng
-          }
+          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng)
         }
       })
     } catch (error) {

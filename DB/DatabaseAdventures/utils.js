@@ -40,7 +40,10 @@ const formatAdventureForGeoJSON = (adventures) => {
         },
         geometry: {
           type: 'Point',
-          coordinates: [point.coordinates_lng, point.coordiantes_lat]
+          coordinates: formatCoordsGeo(
+            point.coordinates_lat,
+            point.coordinates_lng
+          )
         }
       }))
     },
@@ -73,7 +76,7 @@ const splitPath = (pathStr = '[]') => {
   let newPath, newPoints
 
   let pathArr = null
-  if (typeof pathStr === 'string') {
+  if (typeof pathStr === 'string' && pathStr.length > 0) {
     pathArr = JSON.parse(pathStr)
   } else {
     logger.info(`unexpected pathStr: ${pathStr}`)
@@ -297,6 +300,17 @@ const createSpecificProperties = (parsedAdventures) => {
   return specificProperties
 }
 
+const formatCoordsObject = (lat, lng) => {
+  return {
+    lat: parseFloat(lat.toFixed(6)),
+    lng: parseFloat(lng.toFixed(6))
+  }
+}
+
+const formatCoordsGeo = (lat, lng) => {
+  return [parseFloat(lng.toFixed(6)), parseFloat(lat.toFixed(6))]
+}
+
 const pathAdventures = ['ski', 'hike', 'bike', 'skiApproach']
 
 module.exports = {
@@ -312,6 +326,8 @@ module.exports = {
   removeUnusedVariables,
   splitPath,
   adventurePathColor,
+  formatCoordsObject,
+  formatCoordsGeo,
   adventureTemplate,
   pathAdventures
 }

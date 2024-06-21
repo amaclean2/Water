@@ -261,8 +261,8 @@ class AdventureDataLayer extends DataLayer {
    * @param {string} params.adventureType
    * @param {number} params.zoneId
    * @param {Object} params.coordinates
-   * @param {number} params.coordiantes.lat
-   * @param {number} params.coordiantes.lng
+   * @param {number} params.coordinates.lat
+   * @param {number} params.coordinates.lng
    * @returns {Promise<Object>} an array of adventures that match up to the given parameters
    */
   async getClosestZoneAdventures({

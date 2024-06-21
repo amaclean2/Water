@@ -1,6 +1,6 @@
 {
   "name": "@amaclean2/sundaypeak-water",
-  "version": "1.9.79",
+  "version": "1.9.86",
   "description": "Backend services for SundayPeak",
   "main": "index.js",
   "scripts": {

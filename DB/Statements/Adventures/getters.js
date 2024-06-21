@@ -114,17 +114,18 @@ WHERE a.adventure_type = ? AND a.public = 1 AND zi.parent_id IS NULL`
 
 const selectSkiApproachStatement = `
   SELECT
-  a.id,
+  a.id AS adventure_id,
   a.adventure_name,
   a.adventure_type,
   a.public,
   a.coordinates_lat,
   a.coordinates_lng,
-  sa.trail_path
+  sa.trail_path AS ski_approach_path
   FROM adventures AS a
-  INNER JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
-  WHERE a.adventure_type = "skiApproach" AND public = 1
-`
+  LEFT JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
+  LEFT JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
+  WHERE a.adventure_type = "skiApproach" AND public = 1 AND zi.parent_id IS NULL`
+
 const getSpecificAdventureId = `SELECT
     adventure_type,
     CASE 
