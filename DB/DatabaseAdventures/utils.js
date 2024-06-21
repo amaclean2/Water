@@ -94,7 +94,16 @@ const splitPath = (pathStr = '[]') => {
     newPoints = []
   }
 
-  return [newPath, newPoints]
+  return [
+    newPath.map(([lng, lat]) => [
+      parseFloat(lng.toFixed(6)),
+      parseFloat(lat.toFixed(6))
+    ]),
+    newPoints.map(([lng, lat]) => [
+      parseFloat(lng.toFixed(6)),
+      parseFloat(lat.toFixed(6))
+    ])
+  ]
 }
 
 const removeUnusedVariables = (adventure) => {
