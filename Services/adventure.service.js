@@ -60,8 +60,12 @@ class AdventureService extends Water {
       adventureId: id
     })
 
-    const { coordinates_lat, coordinates_lng, public, ...newAdventure } =
-      adventure
+    const {
+      coordinates_lat,
+      coordinates_lng,
+      public: isPublic,
+      ...newAdventure
+    } = adventure
 
     return {
       ...newAdventure,
@@ -70,7 +74,7 @@ class AdventureService extends Water {
       breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
-      public: Boolean(public)
+      public: Boolean(isPublic)
     }
   }
 

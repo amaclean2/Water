@@ -45,7 +45,7 @@ class ZoneDataLayer extends DataLayer {
       const {
         coordinates_lat,
         coordinates_lng,
-        public,
+        public: isPublic,
         date_created,
         ...newZoneData
       } = zoneData
@@ -54,7 +54,7 @@ class ZoneDataLayer extends DataLayer {
         ...newZoneData,
         coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
         date_created: new Date(date_created).getTime(),
-        public: Boolean(public)
+        public: Boolean(isPublic)
       }
     } catch (error) {
       throw failedQuery(error)
@@ -73,13 +73,13 @@ class ZoneDataLayer extends DataLayer {
       ])
 
       return zoneAdventures.map((adventure) => {
-        const { coordinates_lat, coordinates_lng, public, ...newAdventure } =
+        const { coordinates_lat, coordinates_lng, isPublic, ...newAdventure } =
           removeUnusedVariables(adventure)
 
         return {
           ...newAdventure,
           coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-          public: Boolean(public)
+          public: Boolean(isPublic)
         }
       })
     } catch (error) {
@@ -96,12 +96,13 @@ class ZoneDataLayer extends DataLayer {
     try {
       const [zoneSubzones] = await this.sendQuery(getZoneSubzoneQuery, [zoneId])
       return zoneSubzones.map((subZone) => {
-        const { coordinates_lat, coordinates_lng, public, ...newZone } = subZone
+        const { coordinates_lat, coordinates_lng, isPublic, ...newZone } =
+          subZone
 
         return {
           ...newZone,
           coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-          public: Boolean(public)
+          public: Boolean(isPublic)
         }
       })
     } catch (error) {
