@@ -42,12 +42,18 @@ class ZoneDataLayer extends DataLayer {
 
       if (!zoneData) return {}
 
-      const { coordinates_lat, coordinates_lng, public, ...newZoneData } =
-        zoneData
+      const {
+        coordinates_lat,
+        coordinates_lng,
+        public,
+        date_created,
+        ...newZoneData
+      } = zoneData
 
       return {
         ...newZoneData,
         coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
+        date_created: new Date(date_created).getTime(),
         public: Boolean(public)
       }
     } catch (error) {

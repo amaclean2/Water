@@ -186,7 +186,12 @@ class MessageDataLayer extends DataLayer {
    */
   getMessagesPerConversation({ conversationId }) {
     return this.sendQuery(getConversationMessagesStatement, [conversationId])
-      .then(([results]) => results)
+      .then(([results]) =>
+        results.map((result) => ({
+          ...result,
+          date_created: new Date(result.date_created).getTime()
+        }))
+      )
       .catch(failedQuery)
   }
 

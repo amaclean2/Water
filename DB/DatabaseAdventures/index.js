@@ -195,6 +195,9 @@ class AdventureDataLayer extends DataLayer {
       }
 
       selectedAdventure.public = Boolean(selectedAdventure.public)
+      selectedAdventure.date_created = new Date(
+        selectedAdventure.date_created
+      ).getTime()
 
       // convert the stringified path back to an object
       // pathAdventures are any adventures that would have a path/elevations property
