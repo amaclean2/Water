@@ -142,7 +142,7 @@ const formatShortAdventure = (adventure) => {
     'coordinates_lng'
   ]
 
-  const missingProperty = shortAdventureProperties.every((property) => {
+  const hasAllProperties = shortAdventureProperties.every((property) => {
     if (Object.keys(adventure).includes(property)) {
       return true
     } else {
@@ -150,7 +150,7 @@ const formatShortAdventure = (adventure) => {
     }
   })
 
-  if (missingProperty) {
+  if (!hasAllProperties) {
     throw 'database query failed to include all short adventure properties'
   }
 
@@ -190,7 +190,7 @@ const formatShortZone = (zone) => {
     'coordinates_lng'
   ]
 
-  const missingProperty = shortZoneProperties.every((property) => {
+  const hasAllProperties = shortZoneProperties.every((property) => {
     if (Object.keys(zone).includes(property)) {
       return true
     } else {
@@ -198,7 +198,7 @@ const formatShortZone = (zone) => {
     }
   })
 
-  if (missingProperty) {
+  if (!hasAllProperties) {
     throw 'database query failed to include all short zone properties'
   }
 

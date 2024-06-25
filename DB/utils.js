@@ -9,7 +9,7 @@ const formatShortUser = (user) => {
     'profile_picture_url'
   ]
 
-  const missingProperty = shortUserProperties.every((property) => {
+  const hasAllProperties = shortUserProperties.every((property) => {
     if (Object.keys(user).includes(property)) {
       return true
     } else {
@@ -17,7 +17,7 @@ const formatShortUser = (user) => {
     }
   })
 
-  if (missingProperty) {
+  if (!hasAllProperties) {
     throw 'database query failed to include all short user properties'
   }
 
