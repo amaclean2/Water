@@ -26,7 +26,11 @@ const {
   failedUpdate,
   failedDeletion
 } = require('../utils')
-const { removeUnusedVariables, formatCoordsObject } = require('./utils')
+const {
+  formatCoordsObject,
+  formatShortAdventure,
+  formatShortZone
+} = require('./utils')
 
 class ZoneDataLayer extends DataLayer {
   /**
@@ -42,18 +46,31 @@ class ZoneDataLayer extends DataLayer {
 
       if (!zoneData) return {}
 
+      // assembling creator details into a separate object
       const {
         coordinates_lat,
         coordinates_lng,
         public: isPublic,
         date_created,
+        creator_id,
+        creator_name,
+        creator_email,
+        creator_picture_url,
         ...newZoneData
       } = zoneData
+
+      const creator = {
+        id: creator_id,
+        name: creator_name,
+        email: creator_email,
+        picture_url: creator_picture_url,
+        date_created: new Date(date_created).getTime()
+      }
 
       return {
         ...newZoneData,
         coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-        date_created: new Date(date_created).getTime(),
+        creator,
         public: Boolean(isPublic)
       }
     } catch (error) {
@@ -72,16 +89,7 @@ class ZoneDataLayer extends DataLayer {
         zoneId
       ])
 
-      return zoneAdventures.map((adventure) => {
-        const { coordinates_lat, coordinates_lng, isPublic, ...newAdventure } =
-          removeUnusedVariables(adventure)
-
-        return {
-          ...newAdventure,
-          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-          public: Boolean(isPublic)
-        }
-      })
+      return zoneAdventures.map((adventure) => formatShortAdventure(adventure))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -95,16 +103,7 @@ class ZoneDataLayer extends DataLayer {
   async getZoneSubzones({ zoneId }) {
     try {
       const [zoneSubzones] = await this.sendQuery(getZoneSubzoneQuery, [zoneId])
-      return zoneSubzones.map((subZone) => {
-        const { coordinates_lat, coordinates_lng, isPublic, ...newZone } =
-          subZone
-
-        return {
-          ...newZone,
-          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-          public: Boolean(isPublic)
-        }
-      })
+      return zoneSubzones.map((subZone) => formatShortZone(subZone))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -196,13 +195,7 @@ class ZoneDataLayer extends DataLayer {
         count
       ])
 
-      return results.map((result) => {
-        const { coordinates_lat, coordinates_lng, ...newResult } = result
-        return {
-          ...newResult,
-          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng)
-        }
-      })
+      return results.map((result) => formatShortZone(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -238,13 +231,7 @@ class ZoneDataLayer extends DataLayer {
         count
       ])
 
-      return results.map((result) => {
-        const { coordinates_lat, coordinates_lng, ...newResult } = result
-        return {
-          ...newResult,
-          coordinates: formatCoordsObject(coordinates_lat, coordinates_lng)
-        }
-      })
+      return results.map((result) => formatShortZone(result))
     } catch (error) {
       throw failedQuery(error)
     }

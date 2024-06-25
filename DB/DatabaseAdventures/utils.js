@@ -130,6 +130,87 @@ const removeUnusedVariables = (adventure) => {
   return adventure
 }
 
+const formatShortAdventure = (adventure) => {
+  const shortAdventureProperties = [
+    'adventure_id',
+    'adventure_name',
+    'adventure_type',
+    'difficulty',
+    'rating',
+    'nearest_city',
+    'coordinates_lat',
+    'coordinates_lng'
+  ]
+
+  const missingProperty = shortAdventureProperties.every((property) => {
+    if (Object.keys(adventure).includes(property)) {
+      return true
+    } else {
+      return false
+    }
+  })
+
+  if (missingProperty) {
+    throw 'database query failed to include all short adventure properties'
+  }
+
+  const pathProperties = {
+    ski: 'ski_path',
+    hike: 'hike_path',
+    bike: 'bike_path',
+    skiApproach: 'ski_approach_path'
+  }
+
+  if (adventure[pathProperties[adventure.adventure_type]]) {
+    adventure = removeUnusedVariables(adventure)
+  }
+
+  return {
+    adventure_id: adventure.adventure_id,
+    adventure_name: adventure.adventure_name,
+    adventure_type: adventure.adventure_type,
+    difficulty: adventure.difficulty,
+    rating: adventure.rating,
+    nearest_city: adventure.nearest_city,
+    coordinates: formatCoordsObject(
+      adventure.coordinates_lat,
+      adventure.coordinates_lng
+    ),
+    ...(adventure.path && { path: adventure.path })
+  }
+}
+
+const formatShortZone = (zone) => {
+  const shortZoneProperties = [
+    'zone_id',
+    'zone_name',
+    'adventure_type',
+    'nearest_city',
+    'coordinates_lat',
+    'coordinates_lng'
+  ]
+
+  const missingProperty = shortZoneProperties.every((property) => {
+    if (Object.keys(zone).includes(property)) {
+      return true
+    } else {
+      return false
+    }
+  })
+
+  if (missingProperty) {
+    throw 'database query failed to include all short zone properties'
+  }
+
+  return {
+    zone_id: zone.zone_id,
+    zone_name: zone.zone_name,
+    adventure_type: zone.adventure_type,
+    nearest_city: zone.nearest_city,
+    coordinates: formatCoordsObject(zone.coordinates_lat, zone.coordinates_lng)
+  }
+}
+
 // all properties below must be in order of the database query
 const getSkiSpecificFields = (adventure) => [
   adventure.avg_angle ?? 0,
@@ -324,6 +405,8 @@ const pathAdventures = ['ski', 'hike', 'bike', 'skiApproach']
 
 module.exports = {
   formatAdventureForGeoJSON,
+  formatShortAdventure,
+  formatShortZone,
   getSkiSpecificFields,
   getClimbSpecificFields,
   getHikeSpecificFields,

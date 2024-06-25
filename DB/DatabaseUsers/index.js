@@ -23,7 +23,8 @@ const {
   failedInsertion,
   failedQuery,
   failedUpdate,
-  failedDeletion
+  failedDeletion,
+  formatShortUser
 } = require('../utils')
 
 class UserDataLayer extends DataLayer {
@@ -213,30 +214,34 @@ class UserDataLayer extends DataLayer {
    * @param {number} params.userId
    * @returns {Promise<FriendObject[]>} the list of friends of the given user
    */
-  getFriendsData({ userId }) {
-    return this.sendQuery(getFriendsStatement, [userId, userId])
-      .then(([results]) =>
-        results.map((result) =>
-          result.leader_id === Number(userId)
-            ? {
-                user_id: result.follower_id,
-                display_name: result.follower_display_name,
-                first_name: result.follower_first_name,
-                profile_picture_url: result.follower_picture ?? '',
-                email: result.follower_email,
-                email_opt_out: result.follower_email_opt
-              }
-            : {
-                user_id: result.leader_id,
-                display_name: result.leader_display_name,
-                first_name: result.leader_first_name,
-                profile_picture_url: result.leader_picture ?? '',
-                email: result.leader_email,
-                email_opt_out: result.leader_email_opt
-              }
-        )
-      )
-      .catch(failedQuery)
+  async getFriendsData({ userId }) {
+    try {
+      const [results] = await this.sendQuery(getFriendsStatement, [
+        userId,
+        userId
+      ])
+      return results.map((result) => {
+        if (result.leader_id === Number(userId)) {
+          return formatShortUser({
+            user_id: result.follower_id,
+            display_name: result.follower_display_name,
+            first_name: result.follower_first_name,
+            profile_picture_url: result.follower_picture ?? '',
+            email: result.follower_email
+          })
+        } else {
+          return formatShortUser({
+            user_id: result.leader_id,
+            display_name: result.leader_display_name,
+            first_name: result.leader_first_name,
+            profile_picture_url: result.leader_picture ?? '',
+            email: result.leader_email
+          })
+        }
+      })
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -244,7 +249,7 @@ class UserDataLayer extends DataLayer {
    * @param {string} params.userEmail
    * @returns {Promise<string>} | a validation string that the user opt out variable was switched
    */
-  switchEmailOpt({ userEmail }) {
+  emailOptOut({ userEmail }) {
     return this.sendQuery(optOutOfEmailStatement, [userEmail])
       .then(() => 'user opted out successfully')
       .catch(failedUpdate)

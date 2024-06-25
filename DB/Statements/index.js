@@ -3,7 +3,6 @@ const adventureStatements = require('./Adventures')
 const tickStatements = require('./TodoAdventures')
 const activityStatements = require('./CompletedAdventures')
 const passwordResetStatements = require('./PasswordReset')
-const followerStatements = require('./Followers')
 const pictureStatements = require('./Pictures')
 
 module.exports = {
@@ -12,6 +11,5 @@ module.exports = {
   ...tickStatements,
   ...activityStatements,
   ...passwordResetStatements,
-  ...followerStatements,
   ...pictureStatements
 }

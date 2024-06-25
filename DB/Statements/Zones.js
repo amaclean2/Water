@@ -17,7 +17,7 @@ FROM zones AS z
 INNER JOIN users AS u ON z.creator_id = u.id
 WHERE z.id = ?`
 
-// Get all the top level zones of an adventure type
+// Get all the orphan zones of an adventureType
 const getAllZonesOfATypeQuery = `
 SELECT
 z.id,
@@ -38,7 +38,9 @@ a.adventure_name,
 a.id AS adventure_id,
 a.coordinates_lat,
 a.coordinates_lng,
-a.public,
+a.difficulty,
+a.rating,
+a.nearest_city,
 s.trail_path AS ski_path,
 h.trail_path AS hike_path,
 b.trail_path AS bike_path,
@@ -60,7 +62,7 @@ z2.adventure_type,
 z2.zone_name,
 z2.coordinates_lat,
 z2.coordinates_lng,
-z2.public
+z2.nearest_city
 FROM zones AS z
 INNER JOIN zone_interactions AS zi ON zi.parent_id = z.id
 INNER JOIN zones AS z2 ON zi.zone_child_id = z2.id
@@ -73,8 +75,7 @@ const getCloseZonesQuery = `SELECT
   z.adventure_type,
   z.coordinates_lat,
   z.coordinates_lng,
-  z.nearest_city,
-  z.bio
+  z.nearest_city
   FROM zones AS z
   WHERE public = 1 AND adventure_type = ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
@@ -87,8 +88,7 @@ SELECT
   z.adventure_type,
   z.coordinates_lat,
   z.coordinates_lng,
-  z.nearest_city,
-  z.bio
+  z.nearest_city
   FROM zones AS z
   LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
   WHERE public = 1 AND adventure_type = ? AND (zi.parent_id != ? OR zi.parent_id IS NULL) AND z.id != ?
@@ -104,7 +104,7 @@ const intersectingAdventureQuery =
 
 // Get the insersecting zone types between two zones
 const intersectingZoneQuery =
-  'SELECT DISTINCT adventure_type FROM zones WHERE id IN (?, ?);'
+  'SELECT DISTINCT adventure_type FROM zones WHERE id IN (?, ?)'
 
 // Create a zone
 const createZoneQuery =

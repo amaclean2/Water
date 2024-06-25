@@ -36,7 +36,8 @@ const {
   getGeneralFields,
   pathAdventures,
   removeUnusedVariables,
-  splitPath
+  splitPath,
+  formatShortAdventure
 } = require('./utils')
 const {
   failedInsertion,
@@ -253,7 +254,7 @@ class AdventureDataLayer extends DataLayer {
         coordinates.lng,
         count
       ])
-      return results
+      return results.map((result) => formatShortAdventure(result))
     } catch (error) {
       return failedQuery(error)
     }
@@ -282,13 +283,14 @@ class AdventureDataLayer extends DataLayer {
         coordinates.lng,
         count
       ])
-      return results
+      return results.map((result) => formatShortAdventure(result))
     } catch (error) {
       throw failedQuery(error)
     }
   }
 
   /**
+   * @description Get all the orphan adventures adventures relating to a given adventureType
    * @param {Object} params
    * @param {string} params.adventureType
    * @returns {Promise<AdventureObject[]>}
@@ -299,7 +301,7 @@ class AdventureDataLayer extends DataLayer {
         throw 'adventureType parameter required'
       }
 
-      // fetch all the adventures that pertain to that type from the database
+      // fetch all the adventures that pertain to that type
       const [results] = await this.sendQuery(selectAdventuresStatement, [
         adventureType
       ])

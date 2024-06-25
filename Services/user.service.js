@@ -339,7 +339,7 @@ class UserService extends Water {
     try {
       if (!userEmail) throw 'userId field is required'
 
-      const resp = await this.userDB.switchEmailOpt({ userEmail })
+      const resp = await this.userDB.emailOptOut({ userEmail })
 
       logger.info(resp)
       return resp

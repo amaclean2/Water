@@ -1,5 +1,9 @@
 const DataLayer = require('.')
 const {
+  formatShortAdventure,
+  formatShortZone
+} = require('./DatabaseAdventures/utils')
+const {
   searchAdventureQuery,
   searchZoneQuery,
   searchAdventuresNotInZoneQuery,
@@ -7,7 +11,7 @@ const {
   searchZonesNotInZoneQuery,
   searchUserQuery
 } = require('./Statements/SearchQueries')
-const { failedQuery } = require('./utils')
+const { failedQuery, formatShortUser } = require('./utils')
 
 class SearchDataLayer extends DataLayer {
   /**
@@ -22,7 +26,7 @@ class SearchDataLayer extends DataLayer {
         `"${searchText}"`,
         userId
       ])
-      return results
+      return results.map((result) => formatShortUser(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -42,7 +46,7 @@ class SearchDataLayer extends DataLayer {
         userId,
         userId
       ])
-      return results
+      return results.map((result) => formatShortUser(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -58,7 +62,7 @@ class SearchDataLayer extends DataLayer {
       const [results] = await this.sendQuery(searchAdventureQuery, [
         `"${searchText}"`
       ])
-      return results
+      return results.map((result) => formatShortAdventure(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -76,7 +80,7 @@ class SearchDataLayer extends DataLayer {
         `"${searchText}"`,
         parentId
       ])
-      return results
+      return results.map((result) => formatShortAdventure(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -92,7 +96,7 @@ class SearchDataLayer extends DataLayer {
       const [results] = await this.sendQuery(searchZoneQuery, [
         `"${searchText}"`
       ])
-      return results
+      return results.map((result) => formatShortZone(result))
     } catch (error) {
       throw failedQuery(error)
     }
@@ -111,7 +115,7 @@ class SearchDataLayer extends DataLayer {
         parentId,
         parentId
       ])
-      return results
+      return results.map((result) => formatShortZone(result))
     } catch (error) {
       throw failedQuery(error)
     }

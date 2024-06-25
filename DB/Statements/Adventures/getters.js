@@ -64,13 +64,14 @@ const selectAdventureByIdGroup = {
 }
 // get adventures by distance within a type
 const getCloseAdventures = `SELECT
-  id,
+  id AS adventure_id,
   adventure_name,
   adventure_type,
   difficulty,
   rating,
   nearest_city,
-  bio
+  coordinates_lat,
+  coordinates_lng
   FROM adventures
   WHERE public = 1 AND adventure_type = ?
   ORDER BY SQRT(POWER(coordinates_lat - ?, 2) + POWER(coordinates_lng - ?, 2)) LIMIT ?`
@@ -83,7 +84,8 @@ a.adventure_type,
 a.difficulty,
 a.rating,
 a.nearest_city,
-a.bio
+a.coordinates_lat,
+a.coordinates_lng
 FROM adventures AS a
 LEFT JOIN zone_interactions AS zi ON a.id = zi.adventure_child_id
 WHERE public = 1 AND adventure_type = ? AND (zi.parent_id != ? OR zi.parent_id IS NULL)
@@ -100,7 +102,6 @@ a.adventure_name,
 a.id AS adventure_id,
 a.coordinates_lat,
 a.coordinates_lng,
-a.public,
 s.trail_path AS ski_path,
 h.trail_path AS hike_path,
 b.trail_path AS bike_path,
@@ -118,7 +119,6 @@ const selectSkiApproachStatement = `
   a.id AS adventure_id,
   a.adventure_name,
   a.adventure_type,
-  a.public,
   a.coordinates_lat,
   a.coordinates_lng,
   sa.trail_path AS ski_approach_path

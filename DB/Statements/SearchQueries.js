@@ -5,6 +5,7 @@ const searchUserQuery = `
 SELECT
 id AS user_id,
 CONCAT(first_name, ' ', last_name) AS display_name,
+first_name,
 email,
 profile_picture_url
 FROM users
@@ -17,6 +18,7 @@ const searchUsersWithinFriendsQuery = `
 SELECT
 u.id AS user_id,  
 CONCAT(u.first_name, ' ', u.last_name) AS display_name,
+u.first_name,
 u.email,
 u.profile_picture_url
 FROM users AS u
@@ -35,7 +37,11 @@ SELECT
 id AS adventure_id,
 adventure_name,
 adventure_type,
-nearest_city
+nearest_city,
+coordinates_lat,
+coordinates_lng,
+rating,
+difficulty
 FROM adventures
 WHERE MATCH(adventure_name, bio, nearest_city)
 AGAINST(?)`
@@ -46,7 +52,11 @@ SELECT
 a.id AS adventure_id,
 a.adventure_name,
 a.adventure_type,
-a.nearest_city
+a.nearest_city,
+coordinates_lat,
+coordinates_lng,
+rating,
+difficulty
 FROM adventures AS a
 LEFT JOIN zone_interactions AS zi ON zi.adventure_child_id = a.id
 WHERE MATCH(a.adventure_name, a.bio, a.nearest_city)
@@ -59,7 +69,9 @@ SELECT
 z.id AS zone_id,
 z.zone_name,
 z.adventure_type,
-z.nearest_city
+z.nearest_city,
+z.coordinates_lat,
+z.coordinates_lng
 FROM zones AS z
 WHERE MATCH(z.zone_name, z.bio, z.nearest_city)
 AGAINST(?)`
@@ -70,7 +82,9 @@ SELECT
 z.id AS zone_id,
 z.zone_name,
 z.adventure_type,
-z.nearest_city
+z.nearest_city,
+z.coordinates_lat,
+z.coordinates_lng
 FROM zones AS z
 LEFT JOIN zone_interactions AS zi ON zi.zone_child_id = z.id
 WHERE MATCH(z.zone_name, z.bio, z.nearest_city)
