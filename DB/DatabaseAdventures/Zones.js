@@ -25,12 +25,13 @@ const {
   failedInsertion,
   failedUpdate,
   failedDeletion
-} = require('../utils')
+} = require('../Utils/Errors')
 const {
-  formatCoordsObject,
   formatShortAdventure,
-  formatShortZone
-} = require('./utils')
+  formatShortZone,
+  formatCoordsObject,
+  formatCreator
+} = require('../Utils/Formatters')
 
 class ZoneDataLayer extends DataLayer {
   /**
@@ -52,27 +53,17 @@ class ZoneDataLayer extends DataLayer {
         coordinates_lng,
         public: isPublic,
         date_created,
-        creator_id,
-        creator_name,
-        creator_email,
-        creator_picture_url,
         ...newZoneData
       } = zoneData
 
-      const creator = {
-        id: creator_id,
-        name: creator_name,
-        email: creator_email,
-        picture_url: creator_picture_url,
-        date_created: new Date(date_created).getTime()
-      }
-
-      return {
+      const finalZone = formatCreator({
         ...newZoneData,
         coordinates: formatCoordsObject(coordinates_lat, coordinates_lng),
-        creator,
+        date_created: new Date(date_created).getTime(),
         public: Boolean(isPublic)
-      }
+      })
+
+      return finalZone
     } catch (error) {
       throw failedQuery(error)
     }

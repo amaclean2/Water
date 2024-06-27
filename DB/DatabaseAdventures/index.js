@@ -28,23 +28,28 @@ const {
   getCloseAdventuresGivenZone
 } = require('../Statements')
 const {
-  formatAdventureForGeoJSON,
   adventureTemplate,
   getPropsToImport,
   parseAdventures,
-  createSpecificProperties,
-  getGeneralFields,
   pathAdventures,
   removeUnusedVariables,
-  splitPath,
-  formatShortAdventure
-} = require('./utils')
+  splitPath
+} = require('../Utils')
+const {
+  createSpecificProperties,
+  getGeneralFields
+} = require('../Utils/SpecificFields')
 const {
   failedInsertion,
   failedQuery,
   failedUpdate,
   failedDeletion
-} = require('../utils')
+} = require('../Utils/Errors')
+const {
+  formatShortAdventure,
+  formatCreator,
+  formatAdventureForGeoJSON
+} = require('../Utils/Formatters')
 const { removeImage } = require('../../Services/utils/sharp')
 const logger = require('../../Config/logger')
 
@@ -225,7 +230,9 @@ class AdventureDataLayer extends DataLayer {
         selectedAdventure.rating.split(':')[0]
       )}:${selectedAdventure.rating.split(':')[1]}`
 
-      return selectedAdventure
+      const finalAdventure = formatCreator(selectedAdventure)
+
+      return finalAdventure
     } catch (error) {
       return failedQuery(error)
     }

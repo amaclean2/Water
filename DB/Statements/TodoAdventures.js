@@ -1,7 +1,7 @@
 const selectTicksByAdventureStatement =
-  "SELECT CONCAT(u.first_name, ' ', u.last_name) AS display_name, u.email, u.profile_picture_url, u.id AS user_id FROM todo_adventures AS t INNER JOIN users AS u ON t.creator_id = u.id INNER JOIN adventures AS a ON t.adventure_id = a.id WHERE t.adventure_id = ?"
+  "SELECT CONCAT(u.first_name, ' ', u.last_name) AS display_name, u.first_name, u.email, u.profile_picture_url, u.id AS user_id FROM todo_adventures AS t INNER JOIN users AS u ON t.creator_id = u.id INNER JOIN adventures AS a ON t.adventure_id = a.id WHERE t.adventure_id = ?"
 const selectTodoAdventuresByUserStatement =
-  'SELECT u.id AS user_id, a.adventure_name, a.adventure_type, a.id AS adventure_id, a.nearest_city FROM todo_adventures AS t INNER JOIN users AS u ON t.creator_id = u.id INNER JOIN adventures AS a ON t.adventure_id = a.id WHERE t.creator_id = ?'
+  'SELECT a.difficulty, a.rating, a.coordinates_lat, a.coordinates_lng, a.adventure_name, a.adventure_type, a.id AS adventure_id, a.nearest_city FROM todo_adventures AS t INNER JOIN users AS u ON t.creator_id = u.id INNER JOIN adventures AS a ON t.adventure_id = a.id WHERE t.creator_id = ?'
 const getTodoData =
   "SELECT CONCAT(u.first_name, ' ', u.last_name) AS display_name, u.email, u.profile_picture_url, u.id AS user_id, a.adventure_name, a.adventure_type, a.id AS adventure_id, a.nearest_city FROM todo_adventures AS t INNER JOIN users AS u ON t.creator_id = u.id INNER JOIN adventures AS a ON t.adventure_id = a.id WHERE t.creator_id = ? AND t.adventure_id = ?"
 const createTickStatement =

@@ -1,9 +1,5 @@
 const DataLayer = require('.')
 const {
-  formatShortAdventure,
-  formatShortZone
-} = require('./DatabaseAdventures/utils')
-const {
   searchAdventureQuery,
   searchZoneQuery,
   searchAdventuresNotInZoneQuery,
@@ -11,7 +7,8 @@ const {
   searchZonesNotInZoneQuery,
   searchUserQuery
 } = require('./Statements/SearchQueries')
-const { failedQuery, formatShortUser } = require('./utils')
+const { formatShortAdventure, formatShortZone } = require('./Utils/Formatters')
+const { failedQuery } = require('./Utils/Errors')
 
 class SearchDataLayer extends DataLayer {
   /**

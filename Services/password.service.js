@@ -1,5 +1,5 @@
 const Water = require('.')
-const { failedUpdate } = require('../DB/utils')
+const { failedUpdate } = require('../DB/Utils/Errors')
 const { hashPassword } = require('./utils/crypto')
 const { handleEmailReset } = require('./utils/email')
 

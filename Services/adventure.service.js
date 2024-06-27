@@ -1,10 +1,8 @@
 const Water = require('.')
 const csv = require('csvtojson')
 const logger = require('../Config/logger')
-const {
-  splitPath,
-  formatCoordsObject
-} = require('../DB/DatabaseAdventures/utils')
+const { splitPath } = require('../DB/Utils')
+const { formatCoordsObject } = require('../DB/Utils/Formatters')
 
 /**
  * @class

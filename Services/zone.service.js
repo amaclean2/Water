@@ -1,6 +1,6 @@
 const Water = require('.')
 const logger = require('../Config/logger')
-const { formatCoordsGeo } = require('../DB/DatabaseAdventures/utils')
+const { formatCoordsGeo } = require('../DB/Utils/Formatters')
 
 class ZoneService extends Water {
   constructor(sendQuery, jwtSecret) {

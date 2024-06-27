@@ -6,7 +6,6 @@ const {
   getUserWithEmailStatement,
   followUserStatement,
   deleteUserStatement,
-  updateUserStatements,
   checkPasswordResetTokenStatement,
   updateNewPasswordStatement,
   getFriendsStatement,
@@ -23,9 +22,9 @@ const {
   failedInsertion,
   failedQuery,
   failedUpdate,
-  failedDeletion,
-  formatShortUser
-} = require('../utils')
+  failedDeletion
+} = require('../Utils/Errors')
+const { formatShortUser } = require('../Utils/Formatters')
 
 class UserDataLayer extends DataLayer {
   /**

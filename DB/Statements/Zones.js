@@ -1,18 +1,19 @@
 // Get zone information
 const getZoneInformationQuery = `SELECT
-z.zone_name AS zone_name,
-z.id AS id,
-z.adventure_type AS adventure_type,
-z.bio AS bio,
-z.approach AS approach,
-z.nearest_city AS nearest_city,
-z.coordinates_lat AS coordinates_lat,
-z.coordinates_lng AS coordinates_lng,
-z.date_created AS date_created,
-u.id AS creator_id,
-CONCAT(u.first_name, ' ', u.last_name) AS creator_name,
+z.zone_name,
+z.id,
+z.adventure_type,
+z.bio,
+z.approach,
+z.nearest_city,
+z.coordinates_lat,
+z.coordinates_lng,
+z.date_created,
+u.id AS user_id,
+CONCAT(u.first_name, ' ', u.last_name) AS display_name,
+u.first_name,
 u.email AS creator_email,
-u.profile_picture_url AS creator_picture_url
+u.profile_picture_url
 FROM zones AS z
 INNER JOIN users AS u ON z.creator_id = u.id
 WHERE z.id = ?`

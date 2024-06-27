@@ -13,7 +13,11 @@ const {
   insertDeviceTokenStatement,
   selectDeviceTokenStatement
 } = require('../Statements/Messages')
-const { failedInsertion, failedQuery, failedUpdate } = require('../utils')
+const {
+  failedInsertion,
+  failedQuery,
+  failedUpdate
+} = require('../Utils/Errors')
 
 class MessageDataLayer extends DataLayer {
   /**

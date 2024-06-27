@@ -6,7 +6,8 @@ const {
   getCompletedData,
   getAdventureRatingAndDifficulty
 } = require('../Statements')
-const { failedQuery, failedInsertion } = require('../utils')
+const { failedQuery, failedInsertion } = require('../Utils/Errors')
+const { formatShortUser, formatShortAdventure } = require('../Utils/Formatters')
 
 class CompletedAdventureDataLayer extends DataLayer {
   /**
@@ -17,7 +18,7 @@ class CompletedAdventureDataLayer extends DataLayer {
    */
   getCompletedUsers({ adventureId }) {
     return this.sendQuery(selectActivitiesByAdventureStatement, [adventureId])
-      .then(([results]) => results)
+      .then(([results]) => results.map((result) => formatShortUser(result)))
       .catch(failedQuery)
   }
 
@@ -29,7 +30,9 @@ class CompletedAdventureDataLayer extends DataLayer {
    */
   getCompletedAdventures({ userId }) {
     return this.sendQuery(getCompletedAdventureByUserStatement, [userId])
-      .then(([results]) => results)
+      .then(([results]) =>
+        results.map((result) => formatShortAdventure(result))
+      )
       .catch(failedQuery)
   }
 
