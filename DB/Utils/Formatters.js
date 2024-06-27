@@ -136,7 +136,7 @@ const formatShortUser = (user) => {
     'profile_picture_url'
   ]
 
-  const hasAllProperties = shortUserProperties.every((property) => {
+  const hasAllProperties = shortUserProperties.every((property) =>
     Object.keys(user).includes(property)
   )
 

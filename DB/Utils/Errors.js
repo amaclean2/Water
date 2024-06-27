@@ -1,4 +1,4 @@
-const logger = require('../Config/logger')
+const logger = require('../../Config/logger')
 
 const failedInsertion = async (error) => {
   logger.error('DATABASE_INSERTION_FAILED')

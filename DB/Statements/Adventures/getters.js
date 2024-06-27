@@ -15,7 +15,7 @@ const selectAdventureByIdGroup = {
     CONCAT(u.first_name, " ", u.last_name) AS display_name,
     u.first_name,
     u.profile_picture_url,
-    u.emaill,
+    u.email,
     a.date_created,
     a.nearest_city,
     a.public,

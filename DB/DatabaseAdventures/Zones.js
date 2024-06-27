@@ -45,7 +45,7 @@ class ZoneDataLayer extends DataLayer {
         zoneId
       ])
 
-      if (!zoneData) return {}
+      if (!zoneData) return null
 
       // assembling creator details into a separate object
       const {

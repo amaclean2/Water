@@ -66,9 +66,15 @@ class ZoneService extends Water {
    */
   async getZoneData({ zoneId }) {
     // we can support images later
+    const basicZoneData = await this.zoneDB.getZoneMetadata({ zoneId })
+
+    if (basicZoneData === null) {
+      return null
+    }
+
     try {
       const zoneData = {
-        ...(await this.zoneDB.getZoneMetadata({ zoneId })),
+        ...basicZoneData,
         adventures: await this.zoneDB.getZoneAdventures({ zoneId }),
         zones: await this.zoneDB.getZoneSubzones({ zoneId }),
         breadcrumb: await this.zoneDB.buildBreadcrumb({ zoneId }),

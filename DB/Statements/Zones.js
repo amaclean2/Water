@@ -12,7 +12,7 @@ z.date_created,
 u.id AS user_id,
 CONCAT(u.first_name, ' ', u.last_name) AS display_name,
 u.first_name,
-u.email AS creator_email,
+u.email,
 u.profile_picture_url
 FROM zones AS z
 INNER JOIN users AS u ON z.creator_id = u.id
