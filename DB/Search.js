@@ -7,7 +7,11 @@ const {
   searchZonesNotInZoneQuery,
   searchUserQuery
 } = require('./Statements/SearchQueries')
-const { formatShortAdventure, formatShortZone } = require('./Utils/Formatters')
+const {
+  formatShortAdventure,
+  formatShortZone,
+  formatShortUser
+} = require('./Utils/Formatters')
 const { failedQuery } = require('./Utils/Errors')
 
 class SearchDataLayer extends DataLayer {

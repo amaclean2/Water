@@ -52,7 +52,7 @@ const selectAdventureByIdGroup = {
     a.public,
     a.rating,
     c.first_ascent,
-    c.pitchess,
+    c.pitches,
     c.protection,
     c.approach,
     c.climb_type,
@@ -126,11 +126,11 @@ const selectAdventureByIdGroup = {
       a.rating,
       a.difficulty,
       sa.trail_path AS path,
-      sa.elevations AS ,
+      sa.elevations,
       sa.summit_elevation,
       sa.base_elevation,
       sa.gear,
-      sa.exposuree
+      sa.exposure
       FROM adventures AS a
       INNER JOIN ski_approach AS sa ON a.ski_approach_id = sa.id
       INNER JOIN users AS u ON a.creator_id = u.id

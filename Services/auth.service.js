@@ -6,7 +6,7 @@ class AuthService {
   }
 
   issue(payload) {
-    return jwt.sign(payload, this.jwtSecret, { expiresIn: '48h' })
+    return jwt.sign(payload, this.jwtSecret)
   }
 }
 
