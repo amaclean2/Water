@@ -219,6 +219,7 @@ class AdventureDataLayer extends DataLayer {
         // splitting the array around a point that's [0]. This point is there to split the
         // path shown on the map with the points used to edit the path
 
+        // TODO: Convert all data uses to the pathParameters object, then remove the individual properties
         const [path, points] = splitPath(selectedAdventure.path ?? '[]')
         selectedAdventure.path = path
         selectedAdventure.points = points
@@ -226,6 +227,14 @@ class AdventureDataLayer extends DataLayer {
         selectedAdventure.elevations = JSON.parse(
           selectedAdventure.elevations ?? '[]'
         )
+
+        const pathParameters = {
+          path,
+          points,
+          elevations: selectedAdventure.elevations
+        }
+
+        selectedAdventure['path_parameters'] = pathParameters
       } else if (!selectedAdventure.path) {
         selectedAdventure.path = []
       }
