@@ -78,6 +78,12 @@ class ZoneService extends Water {
         adventures: await this.zoneDB.getZoneAdventures({ zoneId }),
         zones: await this.zoneDB.getZoneSubzones({ zoneId }),
         breadcrumb: await this.zoneDB.buildBreadcrumb({ zoneId }),
+        nearby_zones: await this.zoneDB.getZonesByDistance({
+          adventureType: basicZoneData.adventure_type,
+          coordinatesLat: basicZoneData.coordinates.lat,
+          coordinatesLng: basicZoneData.coordinates.lng,
+          count: 10
+        }),
         images: []
       }
 

@@ -32,6 +32,7 @@ class AdventureService extends Water {
         id,
         todo_users: [],
         completed_users: [],
+        nearby_adventures: [],
         images: []
       }
     }
@@ -57,6 +58,14 @@ class AdventureService extends Water {
     const breadcrumb = await this.adventureDB.buldBreadcrumb({
       adventureId: id
     })
+    const nearbyAdventures = await this.adventureDB.getClosestAdventuresFromDB({
+      adventureType: newAdventure.adventure_type,
+      coordinates: {
+        lat: newAdventure.coordinates_lat,
+        lng: newAdventure.coordinates_lng
+      },
+      count: 10
+    })
 
     const {
       coordinates_lat,
@@ -72,6 +81,7 @@ class AdventureService extends Water {
       breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
+      nearby_adventures: nearbyAdventures,
       public: Boolean(isPublic)
     }
   }
