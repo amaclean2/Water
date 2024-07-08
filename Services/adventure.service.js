@@ -59,10 +59,10 @@ class AdventureService extends Water {
       adventureId: id
     })
     const nearbyAdventures = await this.adventureDB.getClosestAdventuresFromDB({
-      adventureType: newAdventure.adventure_type,
+      adventureType: adventure.adventure_type,
       coordinates: {
-        lat: newAdventure.coordinates_lat,
-        lng: newAdventure.coordinates_lng
+        lat: adventure.coordinates_lat,
+        lng: adventure.coordinates_lng
       },
       count: 10
     })
@@ -285,7 +285,17 @@ class AdventureService extends Water {
    */
   async databaseEditPath({ field }) {
     try {
-      const elevations = JSON.parse(field.elevations)
+      // elevations have been seen to have duplicate rows
+      // this removes any duplicates before storing them in the database
+
+      const elevations = JSON.parse(field.elevations).filter(
+        ([_, distance], idx, elevationList) => {
+          if (idx === 0) return true
+          else {
+            return distance != elevationList[idx - 1][1]
+          }
+        }
+      )
 
       // calculate the highest and lowest points on the path
       const highest = Math.round(Math.max(...elevations.map((e) => e[0])))
@@ -317,6 +327,7 @@ class AdventureService extends Water {
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
             ...field,
+            elevations: JSON.stringify(elevations),
             summit_elevation: highest,
             base_elevation: lowest,
             climb: totals[0],
@@ -325,7 +336,10 @@ class AdventureService extends Water {
         })
 
         return {
-          field,
+          field: {
+            ...field,
+            elevations
+          },
           result_path: editPath,
           result_points: editPoints,
           summit_elevation: highest,
@@ -337,6 +351,7 @@ class AdventureService extends Water {
         await this.adventureDB.databaseEditAdventurePaths({
           field: {
             ...field,
+            elevations: JSON.stringify(elevations),
             summit_elevation: highest,
             base_elevation: lowest
           }
@@ -346,7 +361,10 @@ class AdventureService extends Water {
           this.cache.removeFromAdventureCache(field.adventure_type)
 
         return {
-          field,
+          field: {
+            ...field,
+            elevations
+          },
           result_path: editPath,
           result_points: editPoints,
           summit_elevation: highest,
