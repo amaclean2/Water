@@ -44,7 +44,11 @@ class ZoneService extends Water {
               type: 'Point',
               coordinates: formatCoordsGeo(coordinates_lat, coordinates_lng)
             },
-            properties: propertiesObject,
+            properties: {
+              ...propertiesObject,
+              name: propertiesObject.zone_name,
+              type: propertiesObject.adventure_type
+            },
             id: propertiesObject.id
           }
         })

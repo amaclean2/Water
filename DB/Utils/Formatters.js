@@ -24,6 +24,8 @@ const formatAdventureForGeoJSON = (adventures) => {
         properties: {
           adventureType: point.adventure_type,
           adventureName: point.adventure_name,
+          type: point.adventure_type,
+          name: point.adventure_name,
           color: adventurePathColor(point.adventure_type)
         },
         geometry: {
@@ -43,6 +45,8 @@ const formatAdventureForGeoJSON = (adventures) => {
         properties: {
           adventureType: line.adventure_type,
           adventureName: line.adventure_name,
+          type: line.adventure_type,
+          name: line.adventure_name,
           color: adventurePathColor(line.adventure_type)
         },
         geometry: {
