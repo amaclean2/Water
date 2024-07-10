@@ -81,7 +81,9 @@ class AdventureService extends Water {
       breadcrumb,
       todo_users: todoUsers,
       completed_users: completedUsers,
-      nearby_adventures: nearbyAdventures,
+      nearby_adventures: nearbyAdventures.filter(
+        (adv) => adv.adventure_id != adventure.id
+      ),
       public: Boolean(isPublic)
     }
   }
