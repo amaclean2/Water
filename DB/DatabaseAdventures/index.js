@@ -205,9 +205,9 @@ class AdventureDataLayer extends DataLayer {
         selectedAdventure.date_created
       ).getTime()
 
-      if (selectedAdventure.season) {
-        selectedAdventure.season = JSON.parse(selectedAdventure.season)
-      }
+      selectedAdventure.season = selectedAdventure.season
+        ? JSON.parse(selectedAdventure.season)
+        : []
 
       // convert the stringified path back to an object
       // pathAdventures are any adventures that would have a path/elevations property
