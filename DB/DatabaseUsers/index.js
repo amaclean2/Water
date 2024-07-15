@@ -15,7 +15,8 @@ const {
   getUserPicturesStatement,
   deletePictureStatement,
   optOutOfEmailStatement,
-  updateUserStatement
+  updateUserStatement,
+  getShortUsersPerId
 } = require('../Statements')
 const { selectDeviceTokenForUserStatement } = require('../Statements/Messages')
 const {
@@ -28,7 +29,143 @@ const { formatShortUser } = require('../Utils/Formatters')
 
 class UserDataLayer extends DataLayer {
   /**
-   *
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise} a user
+   */
+  getUserById({ userId }) {
+    return this.sendQuery(getUserByIdStatement, [userId])
+      .then(([results]) => (results.length ? results[0] : null))
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.email
+   * @returns {Promise} the user object
+   */
+  getUserByEmail({ email }) {
+    return this.sendQuery(getUserWithEmailStatement, [email])
+      .then(([results]) => (!results.length ? null : results[0]))
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number[]} params.userIds
+   * @returns {Promise<Object>} | A list of short users that apply to the userIds given
+   */
+  async getShortUsers({ userIds }) {
+    try {
+      const [results] = await this.sendQuery(getShortUsersPerId, [[userIds]])
+
+      return results
+    } catch (error) {}
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.email
+   * @returns {Promise<number|boolean>} a boolean if the email exists
+   */
+  checkIfUserExistsByEmail({ email }) {
+    return this.sendQuery(selectUserIdStatement, [email])
+      .then(([results]) => (!!results.length ? results[0].id : false))
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.email
+   * @returns {Promise} a reset token if the email exists or null otherwise
+   */
+  getPasswordResetToken({ email }) {
+    return this.sendQuery(getPasswordHashStatement, [email])
+      .then(([results]) => {
+        if (!results.length) {
+          return null
+        }
+
+        const hashedToken = results[0].password
+        const shortToken = hashedToken.substring(hashedToken.length - 10)
+        return shortToken
+      })
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.token
+   * @returns {Promise<number|null>} an id if that token exists or null otherwise
+   */
+  checkPasswordResetToken({ token }) {
+    return this.sendQuery(checkPasswordResetTokenStatement, [`%${token}`])
+      .then(([results]) => {
+        return results.length ? results[0].id : null
+      })
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<string[]>} | a list of urls attributed to that user
+   */
+  getUserImages({ userId }) {
+    return this.sendQuery(getUserPicturesStatement, [userId])
+      .then(([results]) =>
+        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
+      )
+      .catch(failedQuery)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<FriendObject[]>} the list of friends of the given user
+   */
+  async getFriendsData({ userId }) {
+    try {
+      const [results] = await this.sendQuery(getFriendsStatement, [
+        userId,
+        userId
+      ])
+      return results.map((result) => {
+        if (result.leader_id === Number(userId)) {
+          return formatShortUser({
+            user_id: result.follower_id,
+            display_name: result.follower_display_name,
+            first_name: result.follower_first_name,
+            profile_picture_url: result.follower_picture ?? '',
+            email: result.follower_email
+          })
+        } else {
+          return formatShortUser({
+            user_id: result.leader_id,
+            display_name: result.leader_display_name,
+            first_name: result.leader_first_name,
+            profile_picture_url: result.leader_picture ?? '',
+            email: result.leader_email
+          })
+        }
+      })
+    } catch (error) {
+      throw failedQuery(error)
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {number} params.userId
+   * @returns {Promise<number>} | return the device token for the user if it exists, otherwise null
+   */
+  getDeviceTokenPerUser({ userId }) {
+    return this.sendQuery(selectDeviceTokenForUserStatement, [userId])
+      .then(([results]) => (results.length ? results[0] : null))
+      .catch(failedQuery)
+  }
+
+  /**
    * @param {Object} params
    * @param {string} params.email
    * @param {string} params.firstName
@@ -57,91 +194,6 @@ class UserDataLayer extends DataLayer {
   }
 
   /**
-   *
-   * @param {Object} params
-   * @param {string} params.email
-   * @returns {Promise<number|boolean>} a boolean if the email exists
-   */
-  checkIfUserExistsByEmail({ email }) {
-    return this.sendQuery(selectUserIdStatement, [email])
-      .then(([results]) => (!!results.length ? results[0].id : false))
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.email
-   * @returns {Promise} the user object
-   */
-  getUserByEmail({ email }) {
-    return this.sendQuery(getUserWithEmailStatement, [email])
-      .then(([results]) => (!results.length ? null : results[0]))
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {number} params.userId
-   * @returns {Promise} a user
-   */
-  getUserById({ userId }) {
-    return this.sendQuery(getUserByIdStatement, [userId])
-      .then(([results]) => (results.length ? results[0] : null))
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.email
-   * @returns {Promise} a reset token if the email exists or null otherwise
-   */
-  getPasswordResetToken({ email }) {
-    return this.sendQuery(getPasswordHashStatement, [email])
-      .then(([results]) => {
-        if (!results.length) {
-          return null
-        }
-
-        const hashedToken = results[0].password
-        const shortToken = hashedToken.substring(hashedToken.length - 10)
-        return shortToken
-      })
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.token
-   * @returns {Promise<number|null>} an id if that token exists or null otherwise
-   */
-  checkPasswordResetToken({ token }) {
-    return this.sendQuery(checkPasswordResetTokenStatement, [`%${token}`])
-      .then(([results]) => {
-        return results.length ? results[0].id : null
-      })
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {string} params.newHashedPassword
-   * @param {number} params.userId
-   * @return {Promise} void
-   */
-  replaceUserPassword({ newHashedPassword, userId }) {
-    return this.sendQuery(updateNewPasswordStatement, [
-      newHashedPassword,
-      userId
-    ]).catch(failedUpdate)
-  }
-
-  /**
-   *
    * @param {Object} params
    * @param {number} params.followerId
    * @param {number} params.leaderId
@@ -184,90 +236,6 @@ class UserDataLayer extends DataLayer {
 
   /**
    * @param {Object} params
-   * @param {number} params.userId
-   * @returns {Promise<string[]>} | a list of urls attributed to that user
-   */
-  getUserImages({ userId }) {
-    return this.sendQuery(getUserPicturesStatement, [userId])
-      .then(([results]) =>
-        results.map(({ url }) => url.replace('images/', 'images/thumbs/'))
-      )
-      .catch(failedQuery)
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.url
-   * @returns {Promise<void>}
-   */
-  removeImageEntry({ url }) {
-    const formattedUrl = url.replace('/thumbs', '')
-    return this.sendQuery(deletePictureStatement, [formattedUrl]).catch(
-      failedDeletion
-    )
-  }
-
-  /**
-   *
-   * @param {Object} params
-   * @param {number} params.userId
-   * @returns {Promise<FriendObject[]>} the list of friends of the given user
-   */
-  async getFriendsData({ userId }) {
-    try {
-      const [results] = await this.sendQuery(getFriendsStatement, [
-        userId,
-        userId
-      ])
-      return results.map((result) => {
-        if (result.leader_id === Number(userId)) {
-          return formatShortUser({
-            user_id: result.follower_id,
-            display_name: result.follower_display_name,
-            first_name: result.follower_first_name,
-            profile_picture_url: result.follower_picture ?? '',
-            email: result.follower_email
-          })
-        } else {
-          return formatShortUser({
-            user_id: result.leader_id,
-            display_name: result.leader_display_name,
-            first_name: result.leader_first_name,
-            profile_picture_url: result.leader_picture ?? '',
-            email: result.leader_email
-          })
-        }
-      })
-    } catch (error) {
-      throw failedQuery(error)
-    }
-  }
-
-  /**
-   * @param {Object} params
-   * @param {string} params.userEmail
-   * @returns {Promise<string>} | a validation string that the user opt out variable was switched
-   */
-  emailOptOut({ userEmail }) {
-    return this.sendQuery(optOutOfEmailStatement, [userEmail])
-      .then(() => 'user opted out successfully')
-      .catch(failedUpdate)
-  }
-
-  /**
-   * @param {Object} params
-   * @param {number} params.userId
-   * @returns {Promise<number>} | return the device token for the user if it exists, otherwise null
-   */
-  getDeviceTokenPerUser({ userId }) {
-    return this.sendQuery(selectDeviceTokenForUserStatement, [userId])
-      .then(([results]) => (results.length ? results[0] : null))
-      .catch(failedQuery)
-  }
-
-  /**
-   *
-   * @param {Object} params
    * @param {string} params.fieldName
    * @param {string} params.fieldValue
    * @param {number} params.userId
@@ -283,7 +251,42 @@ class UserDataLayer extends DataLayer {
   }
 
   /**
-   *
+   * @param {Object} params
+   * @param {string} params.newHashedPassword
+   * @param {number} params.userId
+   * @return {Promise} void
+   */
+  replaceUserPassword({ newHashedPassword, userId }) {
+    return this.sendQuery(updateNewPasswordStatement, [
+      newHashedPassword,
+      userId
+    ]).catch(failedUpdate)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.userEmail
+   * @returns {Promise<string>} | a validation string that the user opt out variable was switched
+   */
+  emailOptOut({ userEmail }) {
+    return this.sendQuery(optOutOfEmailStatement, [userEmail])
+      .then(() => 'user opted out successfully')
+      .catch(failedUpdate)
+  }
+
+  /**
+   * @param {Object} params
+   * @param {string} params.url
+   * @returns {Promise<void>}
+   */
+  removeImageEntry({ url }) {
+    const formattedUrl = url.replace('/thumbs', '')
+    return this.sendQuery(deletePictureStatement, [formattedUrl]).catch(
+      failedDeletion
+    )
+  }
+
+  /**
    * @param {Object} params
    * @param {number} params.userId
    * @return {Promise} void

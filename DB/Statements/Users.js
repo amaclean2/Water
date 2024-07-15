@@ -16,6 +16,9 @@ email_opt_out
 FROM users WHERE email = ?`
 const getUserByIdStatement =
   'SELECT first_name, last_name, email, bio, city, id, password, phone, user_site, profile_picture_url, email_opt_out FROM users WHERE id = ?'
+const getShortUsersPerId =
+  'SELECT CONCAT(first_name, " ", last_name) AS display_name, first_name, email, id AS user_id, profile_picture_url FROM users WHERE id IN ?'
+
 const updateUserStatement = 'UPDATE `users` SET ?? = ? WHERE id = ?'
 const deleteUserStatement = 'DELETE FROM users WHERE id = ?'
 const optOutOfEmailStatement =
@@ -37,6 +40,7 @@ module.exports = {
   selectUserIdStatement,
   getUserWithEmailStatement,
   getUserByIdStatement,
+  getShortUsersPerId,
   updateUserStatement,
   deleteUserStatement,
   optOutOfEmailStatement,

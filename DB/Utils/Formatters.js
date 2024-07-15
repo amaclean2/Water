@@ -131,6 +131,15 @@ const formatShortZone = (zone) => {
   }
 }
 
+/**
+ * @param {Object} user
+ * @param {number} user.user_id
+ * @param {string} user.display_name
+ * @param {string} user.first_name
+ * @param {string} user.email
+ * @param {string} user.profile_picture_url
+ * @returns {ShortUserObject}
+ */
 const formatShortUser = (user) => {
   const shortUserProperties = [
     'user_id',

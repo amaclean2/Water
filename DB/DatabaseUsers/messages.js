@@ -18,6 +18,7 @@ const {
   failedQuery,
   failedUpdate
 } = require('../Utils/Errors')
+const { formatShortUser } = require('../Utils/Formatters')
 
 class MessageDataLayer extends DataLayer {
   /**
@@ -30,20 +31,23 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<Object>} | an object containing the new id of
    * the message as insertId
    */
-  saveNewMessage({
+  async saveNewMessage({
     conversationId,
     senderId,
     messageBody,
     dataReference = ''
   }) {
-    return this.sendQuery(createNewMessageStatement, [
-      conversationId,
-      senderId,
-      messageBody,
-      dataReference
-    ])
-      .then(([{ insertId }]) => ({ insertId }))
-      .catch(failedInsertion)
+    try {
+      const [{ insertId }] = await this.sendQuery(createNewMessageStatement, [
+        conversationId,
+        senderId,
+        messageBody,
+        dataReference
+      ])
+      return { insertId }
+    } catch (error) {
+      throw failedInsertion(errror)
+    }
   }
 
   /**
@@ -52,10 +56,12 @@ class MessageDataLayer extends DataLayer {
    * @param {number} params.conversationId
    * @returns {Promise<void>}
    */
-  updateUnread({ userId, conversationId }) {
-    return this.sendQuery(setUnreadStatement, [conversationId, userId]).catch(
-      failedUpdate
-    )
+  async updateUnreadForUser({ userId, conversationId }) {
+    try {
+      await this.sendQuery(setUnreadStatement, [conversationId, userId])
+    } catch (error) {
+      throw failedUpdate(error)
+    }
   }
 
   /**
@@ -64,7 +70,7 @@ class MessageDataLayer extends DataLayer {
    * @param {number} params.conversationId
    * @returns {Promise<void>}
    */
-  setLastMessage({ lastMessage, conversationId }) {
+  setLastMessageInConversation({ lastMessage, conversationId }) {
     return this.sendQuery(setLastMessageStatement, [
       lastMessage,
       conversationId
@@ -83,21 +89,29 @@ class MessageDataLayer extends DataLayer {
    * @returns {Promise<NewConversationReturnType>} | an object containing the
    * conversationId of the new conversation
    */
-  async saveNewConversation({ userIds }) {
+  async createNewConversation() {
     try {
       // create a new conversation with last_message property = ''
       const [{ insertId: conversationId }] = await this.sendQuery(
         createNewConversationStatement
       )
+
+      return conversationId
+    } catch (error) {
+      failedInsertion(error)
+      throw error
+    }
+  }
+
+  async saveNewConversationInteractions({ userIds, conversationId }) {
+    try {
       // take the conversation id created above and add it to each user to create conversation_interactions
       // with user_id and conversation_id
       await this.sendQuery(createNewInteractionsStatement, [
         userIds.map((userId) => [userId, conversationId, false])
       ])
-      return { conversation_id: conversationId }
     } catch (error) {
-      failedInsertion(error)
-      throw error
+      throw failedInsertion(error)
     }
   }
 
@@ -105,33 +119,72 @@ class MessageDataLayer extends DataLayer {
    * @param {Object} params
    * @param {number} params.userId | the new user in the conversation
    * @param {number} params.conversationId | then conversation to be modified
-   * @returns {Promise<string>} | a string saying the user was added
+   * @returns {Promise<void>} | nutin
    */
-  addUserToConversation({ userId, conversationId }) {
-    if (typeof userId === 'number' && typeof conversationId === 'number') {
-      logger.info('received userId and conversationId from api')
-    }
+  async addUserToConversation({ userId, conversationId }) {
+    try {
+      if (typeof userId === 'number' && typeof conversationId === 'number') {
+        logger.info('received userId and conversationId from api')
+      }
 
-    return this.sendQuery(createNewInteractionsStatement, [
-      [[userId, conversationId, true]]
-    ])
-      .then(() => 'user added to conversation')
-      .catch(failedInsertion)
+      await this.sendQuery(createNewInteractionsStatement, [
+        [[userId, conversationId, true]]
+      ])
+
+      return 'user added to conversation'
+    } catch (error) {
+      throw failedInsertion(error)
+    }
   }
 
   /**
    * @param {Object} params
    * @param {number[]} params.userIds
-   * @returns {Promise<number|boolean>} | the conversation_id if the two users are in a conversation otherwise false
+   * @returns {Promise<conversation[]>} | all conversations if the two users are in any conversations together
    */
-  findConversation({ userIds }) {
-    return this.sendQuery(findConversationStatement, [
-      [userIds],
-      [userIds],
-      userIds.length
-    ])
-      .then(([results]) => (results.length ? results[0] : false))
-      .catch(failedQuery)
+  async findConversation({ userIds }) {
+    // if a conversation exists return the conversation, otherwise return false
+    try {
+      const [results] = await this.sendQuery(findConversationStatement, [
+        [userIds],
+        userIds.length
+      ])
+
+      return Object.values(
+        results.reduce((acc, convo) => {
+          if (acc[convo.id]) {
+            acc[convo.id].users.push(
+              formatShortUser({
+                user_id: convo.user_id,
+                display_name: convo.display_name,
+                first_name: convo.first_name,
+                email: convo.email,
+                profile_picture_url: convo.profile_picture_url ?? ''
+              })
+            )
+          } else {
+            acc[convo.id] = {
+              users: [
+                formatShortUser({
+                  user_id: convo.user_id,
+                  display_name: convo.display_name,
+                  first_name: convo.first_name,
+                  email: convo.email,
+                  profile_picture_url: convo.profile_picture_url ?? ''
+                })
+              ],
+              conversation_id: convo.conversation_id,
+              conversation_name: convo.conversation_name,
+              last_message: convo.last_message,
+              unread: Boolean(convo.unread)
+            }
+          }
+          return acc
+        }, {})
+      )
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
@@ -151,24 +204,30 @@ class MessageDataLayer extends DataLayer {
         if (conversations[result.conversation_id]) {
           conversations[result.conversation_id].users = [
             ...conversations[result.conversation_id].users,
-            {
+            formatShortUser({
               display_name: result.user_display_name,
+              first_name: result.user_first_name,
+              email: result.user_email,
               user_id: result.user_id,
               profile_picture_url: result.profile_picture_url
-            }
+            })
           ]
 
           if (result.user_id === userId) {
-            conversations[result.conversation_id].unread = !!result.unread
+            conversations[result.conversation_id].unread = Boolean(
+              result.unread
+            )
           }
         } else {
           conversations[result.conversation_id] = {
             users: [
-              {
+              formatShortUser({
                 display_name: result.user_display_name,
+                first_name: result.user_first_name,
+                email: result.user_email,
                 user_id: result.user_id,
                 profile_picture_url: result.profile_picture_url
-              }
+              })
             ],
             conversation_id: result.conversation_id,
             last_message: result.last_message,
@@ -188,15 +247,20 @@ class MessageDataLayer extends DataLayer {
    * @param {number} params.conversationId
    * @returns {Promise<MessageResponse[]>}
    */
-  getMessagesPerConversation({ conversationId }) {
-    return this.sendQuery(getConversationMessagesStatement, [conversationId])
-      .then(([results]) =>
-        results.map((result) => ({
-          ...result,
-          date_created: new Date(result.date_created).getTime()
-        }))
-      )
-      .catch(failedQuery)
+  async getMessagesPerConversation({ conversationId }) {
+    try {
+      const [results] = await this.sendQuery(getConversationMessagesStatement, [
+        conversationId
+      ])
+
+      return results.map((result) => ({
+        ...result,
+        conversation_id: conversationId,
+        date_created: new Date(result.date_created).getTime()
+      }))
+    } catch (error) {
+      throw failedQuery(error)
+    }
   }
 
   /**
