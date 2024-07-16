@@ -59,7 +59,7 @@ class UserDataLayer extends DataLayer {
     try {
       const [results] = await this.sendQuery(getShortUsersPerId, [[userIds]])
 
-      return results
+      return results.map((result) => formatShortUser(result))
     } catch (error) {}
   }
 

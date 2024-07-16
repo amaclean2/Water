@@ -10,8 +10,7 @@ class MessagingService extends Water {
   /**
    * @param {Object} params
    * @param {number[]} params.userIds
-   * @returns {Promise<NewConversationReturnType>} | an object containing the
-   * conversationId of the new conversation
+   * @returns {Promise<NewConversationReturnType>} | { conversation_exists: Bool, conversations: Conversation[] }
    */
   async createConversation({ userIds }) {
     // create a new row in the conversations table
@@ -63,15 +62,29 @@ class MessagingService extends Water {
    * @param {Object} params
    * @param {number} params.userId | the new user in the conversation
    * @param {number} params.conversationId | then conversation to be modified
-   * @returns {Promise<void>} | if everything goes right, there shouldn't be anything to return
+   * @returns {Promise<Object>} | this returns an object containing two properties
+   * 1. `conversations_for_new_user` is a new conversations list for the new user
+   * 2. `new_user_to_conversation` a shortUser object to add to the users in the conversation
    */
-  expandConversation({ userId, conversationId }) {
-    return this.messageDB
-      .addUserToConversation({ userId, conversationId })
-      .then(logger.info)
-      .catch((error) =>
-        logger.error(`failed to add user to conversation: ${error}`)
-      )
+  async expandConversation({ userId, conversationId }) {
+    try {
+      await this.messageDB.addUserToConversation({
+        userId,
+        conversationId
+      })
+
+      const newUserConversations = await this.messageDB.getUserConversations({
+        userId
+      })
+      const newUser = await this.userDB.getShortUsers({ userIds: [userId] })
+
+      return {
+        conversations_for_new_user: newUserConversations,
+        new_user_to_conversation: newUser
+      }
+    } catch (error) {
+      logger.error(`failed to add user to conversation: ${error}`)
+    }
   }
 
   /**
@@ -122,13 +135,12 @@ class MessagingService extends Water {
     dataReference,
     senderName
   }) {
-    // add a new message to the messages table
+    // add a new message to the database
     try {
       if (!conversationId || !senderId || !messageBody) {
         throw 'conversationId, senderId and messageBody are required fields'
       }
 
-      // save the message to the database
       await this.messageDB.saveNewMessage({
         conversationId,
         senderId,
@@ -170,6 +182,7 @@ class MessagingService extends Water {
 
       // return the formatted data
       return {
+        display_name: senderName,
         message_body: messageBody,
         user_id: senderId,
         conversation_id: conversationId,

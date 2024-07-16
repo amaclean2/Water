@@ -159,10 +159,10 @@ const formatShortUser = (user) => {
 
   return {
     user_id: user.user_id,
-    display_name: user.display_name,
-    first_name: user.first_name,
-    email: user.email,
-    profile_picture_url: user.profile_picture_url
+    display_name: user.display_name ?? '',
+    first_name: user.first_name ?? '',
+    email: user.email ?? '',
+    profile_picture_url: user.profile_picture_url ?? ''
   }
 }
 
