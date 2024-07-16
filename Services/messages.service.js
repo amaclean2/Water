@@ -63,8 +63,8 @@ class MessagingService extends Water {
    * @param {number} params.userId | the new user in the conversation
    * @param {number} params.conversationId | then conversation to be modified
    * @returns {Promise<Object>} | this returns an object containing two properties
-   * 1. `conversations_for_new_user` is a new conversations list for the new user
-   * 2. `new_user_to_conversation` a shortUser object to add to the users in the conversation
+   * 1. `newUserConversations` is a new conversations list for the new user
+   * 2. `newUser` a shortUser object to add to the users in the conversation
    */
   async expandConversation({ userId, conversationId }) {
     try {
@@ -78,12 +78,13 @@ class MessagingService extends Water {
       })
       const newUser = await this.userDB.getShortUsers({ userIds: [userId] })
 
-      return {
-        conversations_for_new_user: newUserConversations,
-        new_user_to_conversation: newUser
-      }
+      return { newUserConversations, newUser }
     } catch (error) {
-      logger.error(`failed to add user to conversation: ${error}`)
+      if (error === 'userAlreadyExists') {
+        throw new Error('User already exists in conversation')
+      }
+
+      throw logger.error(`failed to add user to conversation: ${error}`)
     }
   }
 

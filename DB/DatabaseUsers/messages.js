@@ -133,6 +133,9 @@ class MessageDataLayer extends DataLayer {
 
       return 'user added to conversation'
     } catch (error) {
+      if (error.message.includes('Duplicate entry')) {
+        throw 'userAlreadyExists'
+      }
       throw failedInsertion(error)
     }
   }
