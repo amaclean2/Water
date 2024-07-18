@@ -52,6 +52,7 @@ SELECT
   u.email AS user_email,
   u.profile_picture_url,
   c.last_message,
+  c.last_updated,
   c.conversation_name,
   u.id AS user_id,
   ci.conversation_id,

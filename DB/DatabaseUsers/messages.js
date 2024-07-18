@@ -190,6 +190,21 @@ class MessageDataLayer extends DataLayer {
     }
   }
 
+  #buildConversationName(conversation, userId) {
+    if (conversation.conversation_name) {
+      return conversation.conversation_name
+    } else if (Object.keys(conversation.users).length < 3) {
+      return Object.values(conversation.users).find(
+        ({ user_id }) => user_id != userId
+      ).display_name
+    } else {
+      return Object.values(conversation.users)
+        .filter(({ user_id }) => user_id != userId)
+        .map(({ first_name }) => first_name)
+        .join(', ')
+    }
+  }
+
   /**
    * @param {Object} params
    * @param {number} params.userId
@@ -205,8 +220,7 @@ class MessageDataLayer extends DataLayer {
       const conversations = {}
       results.forEach((result) => {
         if (conversations[result.conversation_id]) {
-          conversations[result.conversation_id].users = [
-            ...conversations[result.conversation_id].users,
+          conversations[result.conversation_id].users[result.user_id] =
             formatShortUser({
               display_name: result.user_display_name,
               first_name: result.user_first_name,
@@ -214,30 +228,35 @@ class MessageDataLayer extends DataLayer {
               user_id: result.user_id,
               profile_picture_url: result.profile_picture_url
             })
-          ]
-
-          if (result.user_id === userId) {
-            conversations[result.conversation_id].unread = Boolean(
-              result.unread
-            )
-          }
         } else {
           conversations[result.conversation_id] = {
-            users: [
-              formatShortUser({
+            users: {
+              [result.user_id]: formatShortUser({
                 display_name: result.user_display_name,
                 first_name: result.user_first_name,
                 email: result.user_email,
                 user_id: result.user_id,
                 profile_picture_url: result.profile_picture_url
               })
-            ],
+            },
             conversation_id: result.conversation_id,
             last_message: result.last_message,
+            last_updated: new Date(result.last_updated).getTime(),
             ...(result.user_id === userId && { unread: !!result.unread })
           }
         }
+
+        if (result.user_id === userId) {
+          conversations[result.conversation_id].unread = Boolean(result.unread)
+        }
       })
+
+      for (let i in conversations) {
+        conversations[i].conversation_name = this.#buildConversationName(
+          conversations[i],
+          userId
+        )
+      }
 
       return conversations
     } catch (error) {

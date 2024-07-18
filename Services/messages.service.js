@@ -113,7 +113,7 @@ class MessagingService extends Water {
 
       await this.messageDB.clearUnreadConversation({ userId, conversationId })
 
-      return messages
+      return { messages, conversation_id: conversationId }
     } catch (error) {
       logger.error(error)
       throw error
