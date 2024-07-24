@@ -46,7 +46,7 @@ c.last_message,
 ci.unread;`
 
 const getUserConversationsStatement = `
-SELECT
+SELECT DISTINCT
   CONCAT(u.first_name, ' ', u.last_name) AS user_display_name,
   u.first_name AS user_first_name,
   u.email AS user_email,

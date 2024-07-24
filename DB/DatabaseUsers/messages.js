@@ -156,26 +156,24 @@ class MessageDataLayer extends DataLayer {
       return Object.values(
         results.reduce((acc, convo) => {
           if (acc[convo.id]) {
-            acc[convo.id].users.push(
-              formatShortUser({
-                user_id: convo.user_id,
-                display_name: convo.display_name,
-                first_name: convo.first_name,
-                email: convo.email,
-                profile_picture_url: convo.profile_picture_url ?? ''
-              })
-            )
+            acc[convo.id].users[convo.user_id] = formatShortUser({
+              user_id: convo.user_id,
+              display_name: convo.display_name,
+              first_name: convo.first_name,
+              email: convo.email,
+              profile_picture_url: convo.profile_picture_url ?? ''
+            })
           } else {
             acc[convo.id] = {
-              users: [
-                formatShortUser({
+              users: {
+                [convo.user_id]: formatShortUser({
                   user_id: convo.user_id,
                   display_name: convo.display_name,
                   first_name: convo.first_name,
                   email: convo.email,
                   profile_picture_url: convo.profile_picture_url ?? ''
                 })
-              ],
+              },
               conversation_id: convo.conversation_id,
               conversation_name: convo.conversation_name,
               last_message: convo.last_message,

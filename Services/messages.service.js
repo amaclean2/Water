@@ -1,5 +1,6 @@
 const Water = require('.')
 const logger = require('../Config/logger')
+const { formatDataFromMessage } = require('./utils/handlers')
 const { createAPNNotification } = require('./utils/notifications')
 
 class MessagingService extends Water {
@@ -142,11 +143,13 @@ class MessagingService extends Water {
         throw 'conversationId, senderId and messageBody are required fields'
       }
 
+      const { data, message } = formatDataFromMessage(messageBody)
+
       await this.messageDB.saveNewMessage({
         conversationId,
         senderId,
-        messageBody,
-        dataReference
+        messageBody: message,
+        dataReference: data
       })
 
       // set the unread notification status for the sending user
@@ -187,7 +190,7 @@ class MessagingService extends Water {
         message_body: messageBody,
         user_id: senderId,
         conversation_id: conversationId,
-        data_reference: dataReference ?? null,
+        data_reference: dataReference ?? '',
         date_created: new Date().getTime()
       }
     } catch (error) {
