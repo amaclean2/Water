@@ -103,7 +103,7 @@ class MessageDataLayer extends DataLayer {
     }
   }
 
-  async saveNewConversationInteractions({ userIds, conversationId }) {
+  async saveNewConversationInteractions({ userIds, senderId, conversationId }) {
     try {
       // take the conversation id created above and add it to each user to create conversation_interactions
       // with user_id and conversation_id
@@ -145,15 +145,16 @@ class MessageDataLayer extends DataLayer {
    * @param {number[]} params.userIds
    * @returns {Promise<conversation[]>} | all conversations if the two users are in any conversations together
    */
-  async findConversation({ userIds }) {
+  async findConversation({ userIds, senderId }) {
     // if a conversation exists return the conversation, otherwise return false
     try {
       const [results] = await this.sendQuery(findConversationStatement, [
         [userIds],
+        [userIds],
         userIds.length
       ])
 
-      return Object.values(
+      const conversations = Object.values(
         results.reduce((acc, convo) => {
           if (acc[convo.id]) {
             acc[convo.id].users[convo.user_id] = formatShortUser({
@@ -183,12 +184,17 @@ class MessageDataLayer extends DataLayer {
           return acc
         }, {})
       )
+
+      return conversations.map((convo) => ({
+        ...convo,
+        conversation_name: this.buildConversationName(convo, senderId)
+      }))
     } catch (error) {
       throw failedQuery(error)
     }
   }
 
-  #buildConversationName(conversation, userId) {
+  buildConversationName(conversation, userId) {
     if (conversation.conversation_name) {
       return conversation.conversation_name
     } else if (Object.keys(conversation.users).length < 3) {
@@ -250,7 +256,7 @@ class MessageDataLayer extends DataLayer {
       })
 
       for (let i in conversations) {
-        conversations[i].conversation_name = this.#buildConversationName(
+        conversations[i].conversation_name = this.buildConversationName(
           conversations[i],
           userId
         )

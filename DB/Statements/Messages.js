@@ -14,36 +14,36 @@ const createNewInteractionsStatement =
  * - length of user_id list
  */
 const findConversationStatement = `
-SELECT
-u.id AS user_id,
-u.first_name,
-CONCAT(u.first_name, " ", u.last_name) AS display_name,
-u.email,
-u.profile_picture_url,
-c.id AS conversation_id,
-c.conversation_name,
-c.last_message,
-ci.unread
+SELECT 
+  u.id AS user_id,
+  u.first_name,
+  CONCAT(u.first_name, " ", u.last_name) AS display_name,
+  u.email,
+  u.profile_picture_url,
+  c.id AS conversation_id,
+  c.conversation_name,
+  c.last_message,
+  ci.unread
 FROM users AS u
-INNER JOIN conversation_interactions AS ci ON ci.user_id = u.id
-INNER JOIN conversations AS c ON c.id = ci.conversation_id
-WHERE ci.conversation_id IN (
-  SELECT conversation_id
+INNER JOIN conversation_interactions AS ci ON u.id = ci.user_id
+INNER JOIN conversations AS c ON ci.conversation_id = c.id
+WHERE c.id IN (
+  SELECT
+  conversation_id
   FROM conversation_interactions
-  WHERE user_id IN ?
+  WHERE conversation_id IN (
+    SELECT conversation_id
+    FROM conversation_interactions
+    WHERE user_id IN ?
+  )
+  AND conversation_id NOT IN (
+    SELECT conversation_id
+    FROM conversation_interactions
+    WHERE user_id NOT IN ?
+  )
   GROUP BY conversation_id
-  HAVING COUNT(DISTINCT user_id) = ?
-)
-GROUP BY
-u.first_name,
-display_name,
-u.email,
-u.id,
-u.profile_picture_url,
-c.id,
-c.conversation_name,
-c.last_message,
-ci.unread;`
+  HAVING COUNT(conversation_id) = ?
+)`
 
 const getUserConversationsStatement = `
 SELECT DISTINCT

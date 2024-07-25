@@ -13,11 +13,14 @@ class MessagingService extends Water {
    * @param {number[]} params.userIds
    * @returns {Promise<NewConversationReturnType>} | { conversation_exists: Bool, conversations: Conversation[] }
    */
-  async createConversation({ userIds }) {
+  async createConversation({ userIds, senderId }) {
     // create a new row in the conversations table
     // create new rows in the conversation_interactions table for each user in the conversation
     try {
-      const conversations = await this.messageDB.findConversation({ userIds })
+      const conversations = await this.messageDB.findConversation({
+        userIds,
+        senderId
+      })
 
       if (conversations.length) {
         logger.info(
@@ -40,17 +43,21 @@ class MessagingService extends Water {
           conversationId
         })
 
+        const conversation = {
+          users: await this.userDB.getShortUsers({ userIds }),
+          conversation_id: conversationId,
+          last_message: '',
+          unread: false
+        }
+
+        conversation.conversation_name = this.messageDB.buildConversationName(
+          conversation,
+          senderId
+        )
+
         return {
           conversation_exists: false,
-          conversations: [
-            {
-              users: await this.userDB.getShortUsers({ userIds }),
-              conversation_id: conversationId,
-              conversation_name: '',
-              last_message: '',
-              unread: false
-            }
-          ]
+          conversations: [conversation]
         }
       }
     } catch (error) {
