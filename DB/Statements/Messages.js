@@ -23,6 +23,7 @@ SELECT
   c.id AS conversation_id,
   c.conversation_name,
   c.last_message,
+  c.last_updated,
   ci.unread
 FROM users AS u
 INNER JOIN conversation_interactions AS ci ON u.id = ci.user_id

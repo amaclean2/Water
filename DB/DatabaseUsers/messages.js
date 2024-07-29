@@ -178,6 +178,7 @@ class MessageDataLayer extends DataLayer {
               conversation_id: convo.conversation_id,
               conversation_name: convo.conversation_name,
               last_message: convo.last_message,
+              last_updated: new Date(convo.last_updated).getTime(),
               unread: Boolean(convo.unread)
             }
           }
@@ -281,7 +282,7 @@ class MessageDataLayer extends DataLayer {
 
       return results.map((result) => ({
         ...result,
-        conversation_id: conversationId,
+        conversation_id: Number(conversationId),
         date_created: new Date(result.date_created).getTime()
       }))
     } catch (error) {
